@@ -1,0 +1,260 @@
+definitions:
+  types.CreateCustomerRequest:
+    properties:
+      email:
+        type: string
+      nome:
+        minLength: 2
+        type: string
+    required:
+    - email
+    - nome
+    type: object
+  types.CustomerDto:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      nome:
+        type: string
+      saldo:
+        type: number
+    type: object
+  types.TransactionRequest:
+    properties:
+      amount:
+        type: number
+    required:
+    - amount
+    type: object
+  types.UpdateCustomerRequest:
+    properties:
+      email:
+        type: string
+      nome:
+        minLength: 2
+        type: string
+    required:
+    - email
+    - nome
+    type: object
+info:
+  contact: {}
+  description: API para gerenciar clientes e suas contas
+  title: Itau Case API
+  version: "1.0"
+paths:
+  /clientes:
+    get:
+      consumes:
+      - application/json
+      description: Endpoint para listar todos os usuários
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Lista todos os usuários
+    post:
+      consumes:
+      - application/json
+      description: Endpoint para criar um novo usuário
+      parameters:
+      - description: Dados do usuário
+        in: body
+        name: customer
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateCustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/types.CustomerDto'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Cria um novo usuário
+  /clientes/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Endpoint para deletar um usuário pelo ID
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Deleta um usuário pelo ID
+    get:
+      consumes:
+      - application/json
+      description: Endpoint para obter um usuário pelo ID
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CustomerDto'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Obtém um usuário pelo ID
+    put:
+      consumes:
+      - application/json
+      description: Endpoint para atualizar um usuário existente
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Dados do usuário
+        in: body
+        name: customer
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateCustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CustomerDto'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Atualiza um usuário existente
+  /clientes/{id}/depositar:
+    post:
+      consumes:
+      - application/json
+      description: Endpoint para depositar um valor na conta do usuário
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Dados do depósito
+        in: body
+        name: deposit
+        required: true
+        schema:
+          $ref: '#/definitions/types.TransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CustomerDto'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Deposita um valor na conta do usuário
+  /clientes/{id}/sacar:
+    post:
+      consumes:
+      - application/json
+      description: Endpoint para sacar um valor da conta do usuário
+      parameters:
+      - description: ID do usuário
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Dados do saque
+        in: body
+        name: withdraw
+        required: true
+        schema:
+          $ref: '#/definitions/types.TransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CustomerDto'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Saca um valor da conta do usuário
+swagger: "2.0"
