@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Itau Case APP</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: 'Inter', sans-serif; }
+
+    /* MUDANÇA 1: Criamos uma classe para os estilos de carregamento */
+    .body-loading {
+      background: linear-gradient(135deg, #1976d2, #42a5f5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      overflow: hidden; /* Evita barras de rolagem durante o loading */
+    }
+
+    .loading-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 2rem 3rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      animation: fadeIn 1s ease;
+    }
+
+    .app-logo { font-size: 4rem; margin-bottom: 1rem; color: #fff; }
+    h1 { font-size: 2rem; font-weight: 600; margin-bottom: 0.5rem; }
+    p { font-size: 1rem; margin-bottom: 1.5rem; }
+    .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+
+    /* MUDANÇA 2: Escondemos o app-root inicialmente para evitar "piscadas" */
+    app-root { display: none; }
+  </style>
+</head>
+
+<body class="body-loading">
+
+  <div class="loading-card" id="loadingScreen">
+    <div class="app-logo">
+      <span class="material-icons">account_circle</span>
+    </div>
+    <p class="app-subtitle">Preparando sua experiência de gerenciamento de clientes...</p>
+    <div class="spinner"></div>
+  </div>
+
+  <app-root></app-root>
+
+  <noscript>
+    <p style="color:#fff; text-align:center; margin-top:2rem;">
+      Por favor, habilite o JavaScript para usar este aplicativo.
+    </p>
+  </noscript>
+
+  <script>
+    window.addEventListener('load', () => {
+      const loadingScreen = document.getElementById('loadingScreen');
+      const appRoot = document.querySelector('app-root');
+      const body = document.body;
+
+      if (loadingScreen) loadingScreen.style.display = 'none';
+      if (appRoot) appRoot.style.display = 'block';
+      if (body) body.classList.remove('body-loading');
+    });
+  </script>
+</body>
+</html>

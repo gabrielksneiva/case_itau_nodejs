@@ -1,0 +1,11 @@
+<!-- Este componente agora é apenas um "invólucro" para o formulário reutilizável. -->
+<app-transaction-form 
+  *ngIf="customer"
+  [config]="depositConfig"
+  [clientName]="customer.nome"
+  [loading]="isLoading"
+  [error]="errorMessage"
+  (formSubmit)="handleTransaction($event)"
+  (cancel)="goBack()">
+</app-transaction-form>
+
