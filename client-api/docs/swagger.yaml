@@ -69,6 +69,8 @@ paths:
             additionalProperties: true
             type: object
       summary: Lista todos os usuários
+      tags:
+      - Clientes
     post:
       consumes:
       - application/json
@@ -98,6 +100,8 @@ paths:
             additionalProperties: true
             type: object
       summary: Cria um novo usuário
+      tags:
+      - Clientes
   /clientes/{id}:
     delete:
       consumes:
@@ -125,6 +129,8 @@ paths:
             additionalProperties: true
             type: object
       summary: Deleta um usuário pelo ID
+      tags:
+      - Clientes
     get:
       consumes:
       - application/json
@@ -153,6 +159,8 @@ paths:
             additionalProperties: true
             type: object
       summary: Obtém um usuário pelo ID
+      tags:
+      - Clientes
     put:
       consumes:
       - application/json
@@ -187,6 +195,8 @@ paths:
             additionalProperties: true
             type: object
       summary: Atualiza um usuário existente
+      tags:
+      - Clientes
   /clientes/{id}/depositar:
     post:
       consumes:
@@ -222,6 +232,8 @@ paths:
             additionalProperties: true
             type: object
       summary: Deposita um valor na conta do usuário
+      tags:
+      - Transações
   /clientes/{id}/sacar:
     post:
       consumes:
@@ -257,4 +269,6 @@ paths:
             additionalProperties: true
             type: object
       summary: Saca um valor da conta do usuário
+      tags:
+      - Transações
 swagger: "2.0"

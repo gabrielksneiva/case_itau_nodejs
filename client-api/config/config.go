@@ -1,6 +1,7 @@
 package config
 
 import (
+	"case-itau/utils/logger"
 	"os"
 	"strconv"
 
@@ -36,6 +37,8 @@ func Load() *Config {
 	if dbPath == "" {
 		dbPath = "database.db"
 	}
+
+	logger.NewLogger()
 
 	return &Config{
 		APIPort:      port,

@@ -1,11 +1,12 @@
 package api
 
 import (
+	"case-itau/api/handler"
 	"case-itau/config"
+	"case-itau/repository"
 	"case-itau/repository/connection"
-	repository "case-itau/repository/interface"
-	"case-itau/utils/logger"
-	"log"
+	"case-itau/services/customer"
+	l "case-itau/utils/logger"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -13,23 +14,29 @@ import (
 func Start() {
 	cfg := config.Load()
 
-	logger.NewLogger()
-
-	db, err := connection.NewSqliteConnection(cfg.DBPath)
-	if err != nil {
-		log.Fatalf("failed to connect database: %v", err)
-	}
-	err = db.AutoMigrate(&repository.Clientes{})
-	if err != nil {
-		log.Fatalf("failed to migrate database: %v", err)
-	}
-
 	app := fiber.New(fiber.Config{
 		AppName: "Customer API",
 	})
 
-	Register(app, db, cfg)
+	// init db
+	db, err := connection.NewSqliteConnection(cfg.DBPath)
+	if err != nil {
+		l.Logger.Sugar().Fatalf("failed to connect database: %v", err)
+	}
+	err = db.AutoMigrate(&repository.Clientes{})
+	if err != nil {
+		l.Logger.Sugar().Fatalf("failed to migrate database: %v", err)
+	}
 
-	log.Printf("listening on %s", cfg.APIPort)
-	log.Fatal(app.Listen(":" + cfg.APIPort))
+	// init repo
+	repo := repository.NewCustomerRepository(db)
+	_ = repo.Migrate()
+
+	// init services and handlers
+	svc := customer.NewService(repo)
+	h := handler.NewCustomerHandler(svc)
+
+	Register(app, db, cfg, h)
+
+	l.Logger.Sugar().Fatal(app.Listen(":" + cfg.APIPort))
 }

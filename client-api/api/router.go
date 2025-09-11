@@ -4,10 +4,7 @@ import (
 	"case-itau/api/handler"
 	"case-itau/api/middleware"
 	"case-itau/config"
-
 	_ "case-itau/docs"
-	repository "case-itau/repository/interface"
-	"case-itau/services/customer"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -15,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Register(app *fiber.App, db *gorm.DB, cfg *config.Config) {
+func Register(app *fiber.App, db *gorm.DB, cfg *config.Config, h *handler.CustomerHandler) {
 	// CORS
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
@@ -24,13 +21,6 @@ func Register(app *fiber.App, db *gorm.DB, cfg *config.Config) {
 
 	// apply middlewares
 	middleware.RegisterMiddlewares(app, int64(cfg.RateLimitMax))
-
-	// auto migrate
-	db.AutoMigrate(&repository.Clientes{})
-
-	// init services and handlers
-	svc := customer.NewService(db)
-	h := handler.NewCustomerHandler(svc)
 
 	// swagger
 	app.Get("/docs", func(c *fiber.Ctx) error {

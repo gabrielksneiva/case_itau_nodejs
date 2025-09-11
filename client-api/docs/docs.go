@@ -24,6 +24,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Clientes"
+                ],
                 "summary": "Lista todos os usuários",
                 "responses": {
                     "200": {
@@ -56,6 +59,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Clientes"
                 ],
                 "summary": "Cria um novo usuário",
                 "parameters": [
@@ -102,6 +108,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Clientes"
+                ],
                 "summary": "Obtém um usuário pelo ID",
                 "parameters": [
                     {
@@ -142,6 +151,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Clientes"
                 ],
                 "summary": "Atualiza um usuário existente",
                 "parameters": [
@@ -193,6 +205,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Clientes"
+                ],
                 "summary": "Deleta um usuário pelo ID",
                 "parameters": [
                     {
@@ -232,6 +247,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Transações"
                 ],
                 "summary": "Deposita um valor na conta do usuário",
                 "parameters": [
@@ -284,6 +302,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Transações"
                 ],
                 "summary": "Saca um valor da conta do usuário",
                 "parameters": [

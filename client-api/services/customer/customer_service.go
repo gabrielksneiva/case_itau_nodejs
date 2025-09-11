@@ -1,50 +1,37 @@
 package customer
 
 import (
-	repository "case-itau/repository/interface"
 	"errors"
-	"sync"
+
+	repository "case-itau/repository"
 
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-var ErrNotFound = errors.New("cliente não encontrado")
-var ErrInsufficientFunds = errors.New("saldo insuficiente")
+var (
+	ErrNotFound          = errors.New("cliente não encontrado")
+	ErrInsufficientFunds = errors.New("saldo insuficiente")
+	ErrConflict          = errors.New("conflito de concorrência")
+)
 
 type Service struct {
-	db     *gorm.DB
-	mutexs sync.Map
+	repo repository.CustomerRepo
 }
 
-func NewService(db *gorm.DB) *Service {
-	return &Service{
-		db: db,
-	}
-}
-
-func (s *Service) getLock(id uint) *sync.Mutex {
-	v, ok := s.mutexs.Load(id)
-	if ok {
-		return v.(*sync.Mutex)
-	}
-	m := &sync.Mutex{}
-	actual, _ := s.mutexs.LoadOrStore(id, m)
-	return actual.(*sync.Mutex)
+func NewService(repo repository.CustomerRepo) *Service {
+	return &Service{repo: repo}
 }
 
 func (s *Service) ListAll() ([]repository.Clientes, error) {
-	var list []repository.Clientes
-	if err := s.db.Find(&list).Error; err != nil {
-		return nil, err
-	}
-	return list, nil
+	return s.repo.GetAll()
 }
 
-func (s *Service) GetByID(id uint) (repository.Clientes, error) {
-	var c repository.Clientes
-	if err := s.db.First(&c, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+func (s *Service) GetByID(id int) (repository.Clientes, error) {
+	c, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, repository.ErrRepoNotFound) {
 			return repository.Clientes{}, ErrNotFound
 		}
 		return repository.Clientes{}, err
@@ -54,87 +41,103 @@ func (s *Service) GetByID(id uint) (repository.Clientes, error) {
 
 func (s *Service) Create(input repository.Clientes) (repository.Clientes, error) {
 	input.Saldo = decimal.Zero
-	if err := s.db.Create(&input).Error; err != nil {
+	if input.Version == 0 {
+		input.Version = 1
+	}
+	if err := s.repo.Create(&input); err != nil {
 		return repository.Clientes{}, err
 	}
 	return input, nil
 }
 
-func (s *Service) Update(id uint, input repository.Clientes) (repository.Clientes, error) {
-	var c repository.Clientes
-	if err := s.db.First(&c, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+func (s *Service) Update(id int, input repository.Clientes) (repository.Clientes, error) {
+	curr, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, repository.ErrRepoNotFound) {
 			return repository.Clientes{}, ErrNotFound
 		}
 		return repository.Clientes{}, err
 	}
-	c.Nome = input.Nome
-	c.Email = input.Email
-	if err := s.db.Save(&c).Error; err != nil {
+
+	curr.Nome = input.Nome
+	curr.Email = input.Email
+
+	if err := s.repo.Update(&curr); err != nil {
+		if errors.Is(err, repository.ErrRepoNotFound) {
+			return repository.Clientes{}, ErrNotFound
+		}
+		if errors.Is(err, repository.ErrRepoConflict) {
+			return repository.Clientes{}, ErrConflict
+		}
 		return repository.Clientes{}, err
 	}
-	return c, nil
+
+	updated, err := s.repo.GetByID(id)
+	if err != nil {
+		return repository.Clientes{}, err
+	}
+	return updated, nil
 }
 
-func (s *Service) Delete(id uint) error {
-	if err := s.db.Delete(&repository.Clientes{}, id).Error; err != nil {
+func (s *Service) Delete(id int) error {
+	if err := s.repo.Delete(id); err != nil {
+		if errors.Is(err, repository.ErrRepoNotFound) {
+			return ErrNotFound
+		}
 		return err
 	}
 	return nil
 }
 
-func (s *Service) Deposit(id uint, amount decimal.Decimal) (repository.Clientes, error) {
-	m := s.getLock(id)
-	m.Lock()
-	defer m.Unlock()
-
-	err := s.db.Transaction(func(tx *gorm.DB) error {
-		var c repository.Clientes
-		if err := tx.Clauses().First(&c, id).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrNotFound
-			}
-			return err
+func (s *Service) ChangeBalanceWithPessimisticLock(id int, delta decimal.Decimal) (repository.Clientes, error) {
+	tx := s.repo.DB().Begin()
+	if tx.Error != nil {
+		return repository.Clientes{}, tx.Error
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
 		}
+	}()
 
-		c.Saldo = c.Saldo.Add(amount)
-		if err := tx.Save(&c).Error; err != nil {
-			return err
+	var c repository.Clientes
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&c, id).Error; err != nil {
+		tx.Rollback()
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return repository.Clientes{}, ErrNotFound
 		}
-
-		return nil
-	})
-	if err != nil {
 		return repository.Clientes{}, err
 	}
 
-	return s.GetByID(id)
+	newSaldo := c.Saldo.Add(delta)
+	if newSaldo.IsNegative() {
+		tx.Rollback()
+		return repository.Clientes{}, ErrInsufficientFunds
+	}
+	c.Saldo = newSaldo
+
+	if err := tx.Save(&c).Error; err != nil {
+		tx.Rollback()
+		return repository.Clientes{}, err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return repository.Clientes{}, err
+	}
+
+	return c, nil
 }
 
-func (s *Service) Withdraw(id uint, amount decimal.Decimal) (repository.Clientes, error) {
-	m := s.getLock(id)
-	m.Lock()
-	defer m.Unlock()
-
-	err := s.db.Transaction(func(tx *gorm.DB) error {
-		var c repository.Clientes
-		if err := tx.First(&c, id).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrNotFound
-			}
-			return err
-		}
-		if c.Saldo.LessThan(amount) {
-			return errors.New("saldo insuficiente para saque")
-		}
-		c.Saldo = c.Saldo.Sub(amount)
-		if err := tx.Save(&c).Error; err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return repository.Clientes{}, err
+func (s *Service) Deposit(id int, amount decimal.Decimal) (repository.Clientes, error) {
+	if amount.LessThanOrEqual(decimal.Zero) {
+		return repository.Clientes{}, errors.New("amount deve ser maior que zero")
 	}
-	return s.GetByID(id)
+	return s.ChangeBalanceWithPessimisticLock(id, amount)
+}
+
+func (s *Service) Withdraw(id int, amount decimal.Decimal) (repository.Clientes, error) {
+	if amount.LessThanOrEqual(decimal.Zero) {
+		return repository.Clientes{}, errors.New("amount deve ser maior que zero")
+	}
+	return s.ChangeBalanceWithPessimisticLock(id, amount.Neg())
 }
