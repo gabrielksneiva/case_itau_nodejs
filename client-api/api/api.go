@@ -4,6 +4,7 @@ import (
 	"case-itau/config"
 	"case-itau/repository/connection"
 	repository "case-itau/repository/interface"
+	"case-itau/utils/logger"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,6 +12,8 @@ import (
 
 func Start() {
 	cfg := config.Load()
+
+	logger.NewLogger()
 
 	db, err := connection.NewSqliteConnection(cfg.DBPath)
 	if err != nil {

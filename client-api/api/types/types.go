@@ -1,9 +1,14 @@
 package types
 
-import "github.com/shopspring/decimal"
+import (
+	validations "case-itau/utils/validation"
+	"errors"
+
+	"github.com/shopspring/decimal"
+)
 
 type CustomerDto struct {
-	ID    int            `json:"id"`
+	ID    int             `json:"id"`
 	Nome  string          `json:"nome"`
 	Email string          `json:"email"`
 	Saldo decimal.Decimal `json:"saldo"`
@@ -25,4 +30,29 @@ type TransactionRequest struct {
 
 type ErrorResponse struct {
 	Message string `json:"message"`
+}
+
+func IsValidCreateCustomerRequest(c CreateCustomerRequest) error {
+	if err := validations.Validate(c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func IsValidUpdateCustomerRequest(c UpdateCustomerRequest) error {
+	if err := validations.Validate(c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func IsValidTransactionRequest(t TransactionRequest) error {
+	if err := validations.Validate(t); err != nil {
+		return err
+	}
+
+	if t.Amount.LessThanOrEqual(decimal.Zero) {
+		return errors.New("valor da transação deve ser maior que zero")
+	}
+	return nil
 }

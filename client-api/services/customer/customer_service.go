@@ -9,7 +9,9 @@ import (
 	"gorm.io/gorm"
 )
 
-// Service contains business logic for customers
+var ErrNotFound = errors.New("cliente não encontrado")
+var ErrInsufficientFunds = errors.New("saldo insuficiente")
+
 type Service struct {
 	db     *gorm.DB
 	mutexs sync.Map
@@ -81,13 +83,7 @@ func (s *Service) Delete(id uint) error {
 	return nil
 }
 
-var ErrNotFound = errors.New("customer not found")
-
 func (s *Service) Deposit(id uint, amount decimal.Decimal) (repository.Clientes, error) {
-	if amount.LessThanOrEqual(decimal.Zero) {
-		return repository.Clientes{}, errors.New("amount must be greater than zero")
-	}
-
 	m := s.getLock(id)
 	m.Lock()
 	defer m.Unlock()
@@ -116,10 +112,6 @@ func (s *Service) Deposit(id uint, amount decimal.Decimal) (repository.Clientes,
 }
 
 func (s *Service) Withdraw(id uint, amount decimal.Decimal) (repository.Clientes, error) {
-	if amount.LessThanOrEqual(decimal.Zero) {
-		return repository.Clientes{}, errors.New("amount must be greater than zero")
-	}
-
 	m := s.getLock(id)
 	m.Lock()
 	defer m.Unlock()
@@ -133,7 +125,7 @@ func (s *Service) Withdraw(id uint, amount decimal.Decimal) (repository.Clientes
 			return err
 		}
 		if c.Saldo.LessThan(amount) {
-			return errors.New("insufficient balance")
+			return errors.New("saldo insuficiente para saque")
 		}
 		c.Saldo = c.Saldo.Sub(amount)
 		if err := tx.Save(&c).Error; err != nil {

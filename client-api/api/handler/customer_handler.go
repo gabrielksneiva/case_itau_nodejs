@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/shopspring/decimal"
 
@@ -15,15 +14,13 @@ import (
 
 // CustomerHandler holds dependencies
 type CustomerHandler struct {
-	service  *customer.Service
-	validate *validator.Validate
+	service *customer.Service
 }
 
 // NewCustomerHandler creates a handler
 func NewCustomerHandler(s *customer.Service) *CustomerHandler {
 	return &CustomerHandler{
-		service:  s,
-		validate: validator.New(),
+		service: s,
 	}
 }
 
@@ -93,8 +90,8 @@ func (h *CustomerHandler) Create(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "invalid json"})
 	}
 
-	if err := h.validate.Struct(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "validation error"})
+	if err := types.IsValidCreateCustomerRequest(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: err.Error()})
 	}
 
 	model := repository.Clientes{
@@ -132,8 +129,8 @@ func (h *CustomerHandler) Update(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "invalid json"})
 	}
-	if err := h.validate.Struct(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "validation error"})
+	if err := types.IsValidUpdateCustomerRequest(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: err.Error()})
 	}
 
 	in := repository.Clientes{Nome: req.Nome, Email: req.Email}
@@ -190,11 +187,8 @@ func (h *CustomerHandler) Deposit(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "invalid json"})
 	}
-	if err := h.validate.Struct(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "validation error"})
-	}
-	if req.Amount.LessThanOrEqual(decimal.Zero) {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "amount must be > 0"})
+	if err := types.IsValidTransactionRequest(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: err.Error()})
 	}
 
 	cust, err := h.service.Deposit(uint(id64), req.Amount)
@@ -229,8 +223,8 @@ func (h *CustomerHandler) Withdraw(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "invalid json"})
 	}
-	if req.Amount.LessThanOrEqual(decimal.Zero) {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "amount must be > 0"})
+	if err := types.IsValidTransactionRequest(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: err.Error()})
 	}
 
 	cust, err := h.service.Withdraw(uint(id64), req.Amount)
