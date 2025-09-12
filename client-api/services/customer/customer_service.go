@@ -1,87 +1,101 @@
 package customer
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"strings"
 
-	repository "case-itau/repository"
+	"case-itau/repositories"
 
 	"github.com/shopspring/decimal"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 var (
 	ErrNotFound          = errors.New("cliente não encontrado")
 	ErrInsufficientFunds = errors.New("saldo insuficiente")
-	ErrConflict          = errors.New("conflito de concorrência")
+	ErrUniqueEmail       = errors.New("UNIQUE constraint failed: clientes.email")
 )
 
 type Service struct {
-	repo repository.CustomerRepo
+	repo repositories.IRepository[repositories.Clientes]
 }
 
-func NewService(repo repository.CustomerRepo) *Service {
+func NewService(repo repositories.IRepository[repositories.Clientes]) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) ListAll() ([]repository.Clientes, error) {
-	return s.repo.GetAll()
+func (s *Service) ListAll(ctx context.Context) ([]repositories.Clientes, error) {
+	return s.repo.Find(ctx, nil, "", 0, 0)
 }
 
-func (s *Service) GetByID(id int) (repository.Clientes, error) {
-	c, err := s.repo.GetByID(id)
+func (s *Service) GetByID(ctx context.Context, id int) (*repositories.Clientes, error) {
+	c, err := s.repo.FindOne(ctx, fmt.Sprintf("id = %d", id))
 	if err != nil {
-		if errors.Is(err, repository.ErrRepoNotFound) {
-			return repository.Clientes{}, ErrNotFound
+		if errors.Is(err, repositories.ErrRepoNotFound) {
+			return nil, ErrNotFound
 		}
-		return repository.Clientes{}, err
+		return nil, err
 	}
 	return c, nil
 }
 
-func (s *Service) Create(input repository.Clientes) (repository.Clientes, error) {
+func (s *Service) Create(ctx context.Context, input repositories.Clientes) (repositories.Clientes, error) {
 	input.Saldo = decimal.Zero
 	if input.Version == 0 {
 		input.Version = 1
 	}
-	if err := s.repo.Create(&input); err != nil {
-		return repository.Clientes{}, err
+	if err := s.repo.InsertOne(ctx, &input); err != nil {
+		if strings.Contains(err.Error(), ErrUniqueEmail.Error()) {
+			return repositories.Clientes{}, ErrUniqueEmail
+		}
+		return repositories.Clientes{}, err
 	}
 	return input, nil
 }
 
-func (s *Service) Update(id int, input repository.Clientes) (repository.Clientes, error) {
-	curr, err := s.repo.GetByID(id)
+func (s *Service) Update(ctx context.Context, id int, input repositories.Clientes) (*repositories.Clientes, error) {
+	previous, err := s.repo.FindOne(ctx, fmt.Sprintf("id = %d", id))
 	if err != nil {
-		if errors.Is(err, repository.ErrRepoNotFound) {
-			return repository.Clientes{}, ErrNotFound
+		if strings.Contains(err.Error(), "record not found") {
+			return nil, ErrNotFound
 		}
-		return repository.Clientes{}, err
+		return nil, err
 	}
 
-	curr.Nome = input.Nome
-	curr.Email = input.Email
-
-	if err := s.repo.Update(&curr); err != nil {
-		if errors.Is(err, repository.ErrRepoNotFound) {
-			return repository.Clientes{}, ErrNotFound
-		}
-		if errors.Is(err, repository.ErrRepoConflict) {
-			return repository.Clientes{}, ErrConflict
-		}
-		return repository.Clientes{}, err
+	if previous.Email == input.Email {
+		return nil, ErrUniqueEmail
 	}
 
-	updated, err := s.repo.GetByID(id)
+	update := make(map[string]any)
+	if input.Nome != "" {
+		update["nome"] = input.Nome
+	}
+
+	if input.Email != "" {
+		update["email"] = input.Email
+	}
+
+	if err := s.repo.UpdateOne(ctx, fmt.Sprintf("id = %d", id), update); err != nil {
+		if errors.Is(err, repositories.ErrRepoNotFound) {
+			return nil, err
+		}
+		if strings.Contains(err.Error(), ErrUniqueEmail.Error()) {
+			return nil, ErrUniqueEmail
+		}
+		return nil, err
+	}
+
+	updated, err := s.repo.FindOne(ctx, fmt.Sprintf("id = %d", id))
 	if err != nil {
-		return repository.Clientes{}, err
+		return nil, err
 	}
 	return updated, nil
 }
 
-func (s *Service) Delete(id int) error {
-	if err := s.repo.Delete(id); err != nil {
-		if errors.Is(err, repository.ErrRepoNotFound) {
+func (s *Service) Delete(ctx context.Context, id int) error {
+	if err := s.repo.DeleteOne(ctx, id); err != nil {
+		if errors.Is(err, repositories.ErrRepoNotFound) {
 			return ErrNotFound
 		}
 		return err
@@ -89,55 +103,33 @@ func (s *Service) Delete(id int) error {
 	return nil
 }
 
-func (s *Service) ChangeBalanceWithPessimisticLock(id int, delta decimal.Decimal) (repository.Clientes, error) {
-	tx := s.repo.DB().Begin()
-	if tx.Error != nil {
-		return repository.Clientes{}, tx.Error
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
+func (s *Service) Transactions(ctx context.Context, id int, delta decimal.Decimal) (*repositories.Clientes, error) {
+	c, err := s.repo.FindOne(ctx, fmt.Sprintf("id = %d", id))
+	if err != nil {
+		if errors.Is(err, repositories.ErrRepoNotFound) {
+			return nil, ErrNotFound
 		}
-	}()
-
-	var c repository.Clientes
-	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&c, id).Error; err != nil {
-		tx.Rollback()
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return repository.Clientes{}, ErrNotFound
-		}
-		return repository.Clientes{}, err
+		return nil, err
 	}
 
 	newSaldo := c.Saldo.Add(delta)
 	if newSaldo.IsNegative() {
-		tx.Rollback()
-		return repository.Clientes{}, ErrInsufficientFunds
-	}
-	c.Saldo = newSaldo
-
-	if err := tx.Save(&c).Error; err != nil {
-		tx.Rollback()
-		return repository.Clientes{}, err
+		return nil, ErrInsufficientFunds
 	}
 
-	if err := tx.Commit().Error; err != nil {
-		return repository.Clientes{}, err
+	updates := map[string]any{
+		"saldo": newSaldo,
 	}
 
-	return c, nil
-}
-
-func (s *Service) Deposit(id int, amount decimal.Decimal) (repository.Clientes, error) {
-	if amount.LessThanOrEqual(decimal.Zero) {
-		return repository.Clientes{}, errors.New("amount deve ser maior que zero")
+	err = s.repo.UpdateOne(ctx, fmt.Sprintf("id = %d", c.ID), updates)
+	if err != nil {
+		return nil, err
 	}
-	return s.ChangeBalanceWithPessimisticLock(id, amount)
-}
 
-func (s *Service) Withdraw(id int, amount decimal.Decimal) (repository.Clientes, error) {
-	if amount.LessThanOrEqual(decimal.Zero) {
-		return repository.Clientes{}, errors.New("amount deve ser maior que zero")
+	updated, err := s.repo.FindOne(ctx, fmt.Sprintf("id = %d", c.ID))
+	if err != nil {
+		return nil, err
 	}
-	return s.ChangeBalanceWithPessimisticLock(id, amount.Neg())
+
+	return updated, nil
 }

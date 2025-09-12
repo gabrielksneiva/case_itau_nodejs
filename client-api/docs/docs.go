@@ -387,10 +387,10 @@ const docTemplate = `{
         "types.TransactionRequest": {
             "type": "object",
             "required": [
-                "amount"
+                "valor"
             ],
             "properties": {
-                "amount": {
+                "valor": {
                     "type": "number"
                 }
             }

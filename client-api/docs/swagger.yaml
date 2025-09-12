@@ -23,10 +23,10 @@ definitions:
     type: object
   types.TransactionRequest:
     properties:
-      amount:
+      valor:
         type: number
     required:
-    - amount
+    - valor
     type: object
   types.UpdateCustomerRequest:
     properties:

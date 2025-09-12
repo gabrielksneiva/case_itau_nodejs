@@ -3,13 +3,15 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TransactionFormComponent, TransactionConfig } from '../transaction-form/transaction-form.component';
 import { CustomerService, Customer } from '../../services/customer.service';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-customer-withdraw',
   standalone: true,
   imports: [
     CommonModule,
-    TransactionFormComponent
+    TransactionFormComponent,
+    MatSnackBarModule
   ],
   templateUrl: './customer-withdraw.component.html'
 })
@@ -28,7 +30,8 @@ export class CustomerWithdrawComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private customerService: CustomerService
+    private customerService: CustomerService,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -44,17 +47,30 @@ export class CustomerWithdrawComponent implements OnInit {
     }
   }
 
-  handleTransaction(formData: { amount: number }): void {
+  handleTransaction(formData: { valor: number }): void {
     if (!this.customer) return;
 
     this.isLoading = true;
-    this.errorMessage = undefined;
-    const amount = formData.amount;
-    
-    this.customerService.withdraw(this.customer.id, amount).subscribe({
-      next: () => this.router.navigate(['/clientes']),
+    const valor = formData.valor;
+
+    this.customerService.withdraw(this.customer.id, valor).subscribe({
+      next: () => {
+        this.snackBar.open('Saque realizado com sucesso ', 'Fechar', {
+          duration: 4000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: ['snackbar-success']
+        });
+        this.router.navigate(['/clientes']);
+      },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Saldo insuficiente ou erro na operação. Tente novamente.';
+        const msg = err.error?.message || err.error?.erro || 'Erro inesperado';
+        this.snackBar.open(msg, 'Fechar', {
+          duration: 5000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: ['snackbar-error']
+        });
         this.isLoading = false;
       }
     });

@@ -3,13 +3,15 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TransactionFormComponent, TransactionConfig } from '../transaction-form/transaction-form.component';
 import { CustomerService, Customer } from '../../services/customer.service';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-customer-deposit',
   standalone: true,
   imports: [
     CommonModule,
-    TransactionFormComponent
+    TransactionFormComponent,
+    MatSnackBarModule
   ],
   templateUrl: './customer-deposit.component.html'
 })
@@ -28,7 +30,8 @@ export class CustomerDepositComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private customerService: CustomerService
+    private customerService: CustomerService,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -44,17 +47,31 @@ export class CustomerDepositComponent implements OnInit {
     }
   }
 
-  handleTransaction(formData: { amount: number }): void {
+  handleTransaction(formData: { valor: number }): void {
     if (!this.customer) return;
 
     this.isLoading = true;
     this.errorMessage = undefined;
-    const amount = formData.amount;
+    const valor = formData.valor;
     
-    this.customerService.deposit(this.customer.id, amount).subscribe({
-      next: () => this.router.navigate(['/clientes']),
+    this.customerService.deposit(this.customer.id, valor).subscribe({
+      next: () => {
+        this.snackBar.open('Depósito realizado com sucesso', 'Fechar', {
+          duration: 4000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: ['snackbar-success']
+        });
+        this.router.navigate(['/clientes']);
+      },
       error: (err) => {
-        this.errorMessage = err.error?.message || 'Erro ao realizar o depósito. Tente novamente.';
+        const msg = err.error?.message || err.error?.erro || 'Erro inesperado';
+        this.snackBar.open(msg, 'Fechar', {
+          duration: 5000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: ['snackbar-error']
+        });
         this.isLoading = false;
       }
     });

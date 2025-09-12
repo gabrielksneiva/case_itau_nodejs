@@ -4,6 +4,7 @@ import (
 	validations "case-itau/utils/validation"
 	"errors"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/shopspring/decimal"
 )
 
@@ -25,7 +26,7 @@ type UpdateCustomerRequest struct {
 }
 
 type TransactionRequest struct {
-	Amount decimal.Decimal `json:"amount" validate:"required"`
+	Valor decimal.Decimal `json:"valor" validate:"required"`
 }
 
 type ErrorResponse struct {
@@ -33,27 +34,29 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-func IsValidCreateCustomerRequest(c CreateCustomerRequest) error {
-	if err := validations.Validate(c); err != nil {
-		return err
-	}
-	return nil
+func (fi *CreateCustomerRequest) IsValid(c *CreateCustomerRequest) error {
+	return validations.Validate(c)
 }
 
-func IsValidUpdateCustomerRequest(c UpdateCustomerRequest) error {
-	if err := validations.Validate(c); err != nil {
-		return err
-	}
-	return nil
+func (fi *CreateCustomerRequest) FromBody(ctx *fiber.Ctx) error {
+	return ctx.BodyParser(&fi)
 }
 
-func IsValidTransactionRequest(t TransactionRequest) error {
-	if err := validations.Validate(t); err != nil {
-		return err
-	}
+func (fi *UpdateCustomerRequest) IsValid(c *UpdateCustomerRequest) error {
+	return validations.Validate(c)
+}
 
-	if t.Amount.LessThanOrEqual(decimal.Zero) {
+func (fi *UpdateCustomerRequest) FromBody(ctx *fiber.Ctx) error {
+	return ctx.BodyParser(&fi)
+}
+
+func (fi *TransactionRequest) IsValid(t *TransactionRequest) error {
+	if t.Valor.LessThanOrEqual(decimal.Zero) {
 		return errors.New("valor da transação deve ser maior que zero")
 	}
-	return nil
+	return validations.Validate(t)
+}
+
+func (fi *TransactionRequest) FromBody(ctx *fiber.Ctx) error {
+	return ctx.BodyParser(fi)
 }

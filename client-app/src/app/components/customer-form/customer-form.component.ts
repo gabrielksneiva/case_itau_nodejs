@@ -9,6 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-customer-form',
@@ -20,12 +21,13 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatSnackBarModule 
   ],
   templateUrl: './customer-form.component.html'
 })
 export class CustomerFormComponent implements OnInit {
-  form!: FormGroup; // inicializamos depois no constructor
+  form!: FormGroup;
   isEdit = false;
   id?: number;
   loading = false;
@@ -35,9 +37,9 @@ export class CustomerFormComponent implements OnInit {
     private fb: FormBuilder,
     private service: CustomerService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private snackBar: MatSnackBar 
   ) {
-    // Inicializa o formulário aqui, após FormBuilder já ter sido injetado
     this.form = this.fb.group({
       nome: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
@@ -72,13 +74,33 @@ export class CustomerFormComponent implements OnInit {
       : this.service.create(payload);
 
     obs.subscribe({
-      next: () => this.router.navigate(['/clientes']),
+      next: () => {
+        const msg = this.isEdit
+          ? 'Cliente atualizado com sucesso'
+          : 'Cliente criado com sucesso';
+
+        this.snackBar.open(msg, 'Fechar', {
+          duration: 4000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: ['snackbar-success']
+        });
+
+        this.router.navigate(['/clientes']);
+      },
       error: (err) => {
-        this.error = 'Erro ao salvar cliente';
+        const msg = err.error?.message || 'Erro inesperado';
+        this.snackBar.open(msg, 'Fechar', {
+          duration: 5000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: ['snackbar-error']
+        });
         this.loading = false;
       }
     });
   }
+
 
   cancel() {
     this.router.navigate(['/clientes']);

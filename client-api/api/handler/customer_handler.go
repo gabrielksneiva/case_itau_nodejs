@@ -8,7 +8,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"case-itau/api/types"
-	repository "case-itau/repository"
+	repo "case-itau/repositories"
 	"case-itau/services/customer"
 )
 
@@ -33,9 +33,9 @@ func NewCustomerHandler(s *customer.Service) *CustomerHandler {
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /clientes [get]
 func (h *CustomerHandler) List(c *fiber.Ctx) error {
-	list, err := h.service.ListAll()
+	list, err := h.service.ListAll(c.UserContext())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: "erro interno"})
+		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
 
 	out := make([]types.CustomerDto, 0, len(list))
@@ -61,14 +61,14 @@ func (h *CustomerHandler) List(c *fiber.Ctx) error {
 func (h *CustomerHandler) Get(c *fiber.Ctx) error {
 	id64, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_CUSTOMER_ID", Message: "id de cliente inválido"})
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_CUSTOMER_ID", Message: "Id de cliente inválido"})
 	}
-	cust, err := h.service.GetByID(id64)
+	cust, err := h.service.GetByID(c.UserContext(), id64)
 	if err != nil {
 		if errors.Is(err, customer.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Code: "CUSTOMER_NOT_FOUND", Message: "cliente não encontrado"})
+			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Code: "CUSTOMER_NOT_FOUND", Message: "Cliente não encontrado"})
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: "erro interno"})
+		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
 	out := types.CustomerDto{ID: cust.ID, Nome: cust.Nome, Email: cust.Email, Saldo: cust.Saldo}
 	return c.JSON(out)
@@ -86,23 +86,27 @@ func (h *CustomerHandler) Get(c *fiber.Ctx) error {
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /clientes [post]
 func (h *CustomerHandler) Create(c *fiber.Ctx) error {
-	var req types.CreateCustomerRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_JSON", Message: "json inválido"})
+	req := &types.CreateCustomerRequest{}
+	err := req.FromBody(c)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(&types.ErrorResponse{Code: "INVALID_REQUEST", Message: "Json inválido"})
 	}
 
-	if err := types.IsValidCreateCustomerRequest(req); err != nil {
+	if err = req.IsValid(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_REQUEST", Message: err.Error()})
 	}
 
-	model := repository.Clientes{
+	model := repo.Clientes{
 		Nome:  req.Nome,
 		Email: req.Email,
 		Saldo: decimal.Zero,
 	}
-	created, err := h.service.Create(model)
+	created, err := h.service.Create(c.UserContext(), model)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: "falha ao criar cliente"})
+		if errors.Is(err, customer.ErrUniqueEmail) {
+			return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "EMAIL_ALREADY_EXISTS", Message: "Email já registrado"})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
 	out := types.CustomerDto{ID: created.ID, Nome: created.Nome, Email: created.Email, Saldo: created.Saldo}
 
@@ -124,24 +128,28 @@ func (h *CustomerHandler) Create(c *fiber.Ctx) error {
 func (h *CustomerHandler) Update(c *fiber.Ctx) error {
 	id64, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "id de cliente inválido"})
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_COSTUMER_ID", Message: "Id de cliente inválido"})
 	}
 
-	var req types.UpdateCustomerRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "invalid json"})
+	req := &types.CreateCustomerRequest{}
+	err = req.FromBody(c)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(&types.ErrorResponse{Code: "INVALID_REQUEST", Message: "Json inválido"})
 	}
-	if err := types.IsValidUpdateCustomerRequest(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: err.Error()})
+	if err := req.IsValid(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_REQUEST", Message: err.Error()})
 	}
 
-	in := repository.Clientes{Nome: req.Nome, Email: req.Email}
-	updated, err := h.service.Update(id64, in)
+	in := repo.Clientes{Nome: req.Nome, Email: req.Email}
+	updated, err := h.service.Update(c.UserContext(), id64, in)
 	if err != nil {
 		if errors.Is(err, customer.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Message: "cliente não encontrado"})
+			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Code: "CUSTOMER_NOT_FOUND", Message: "Cliente não encontrado"})
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Message: "falha ao atualizar cliente"})
+		if errors.Is(err, customer.ErrUniqueEmail) {
+			return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "EMAIL_ALREADY_EXISTS", Message: "Email já cadastrado"})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
 	out := types.CustomerDto{ID: updated.ID, Nome: updated.Nome, Email: updated.Email, Saldo: updated.Saldo}
 	return c.JSON(out)
@@ -161,13 +169,13 @@ func (h *CustomerHandler) Update(c *fiber.Ctx) error {
 func (h *CustomerHandler) Delete(c *fiber.Ctx) error {
 	id64, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "id de cliente inválido"})
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_COSTUMER_ID", Message: "Id de cliente inválido"})
 	}
-	if err := h.service.Delete(id64); err != nil {
+	if err := h.service.Delete(c.UserContext(), id64); err != nil {
 		if errors.Is(err, customer.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Message: "cliente não encontrado"})
+			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Code: "CUSTOMER_NOT_FOUND", Message: "Cliente não encontrado"})
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Message: "falha ao deletar cliente"})
+		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
@@ -187,26 +195,27 @@ func (h *CustomerHandler) Delete(c *fiber.Ctx) error {
 func (h *CustomerHandler) Deposit(c *fiber.Ctx) error {
 	id64, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "id de cliente inválido"})
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_COSTUMER_ID", Message: "Id de cliente inválido"})
 	}
 
-	var req types.TransactionRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "json inválido"})
+	req := &types.TransactionRequest{}
+	err = req.FromBody(c)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(&types.ErrorResponse{Code: "INVALID_REQUEST", Message: "Json inválido"})
 	}
-	if err := types.IsValidTransactionRequest(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: err.Error()})
+	if err := req.IsValid(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_REQUEST", Message: err.Error()})
 	}
 
-	cust, err := h.service.Deposit(id64, req.Amount)
+	cust, err := h.service.Transactions(c.UserContext(), id64, req.Valor)
 	if err != nil {
 		if errors.Is(err, customer.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Message: "cliente não encontrado"})
+			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Code: "CUSTOMER_NOT_FOUND", Message: "Cliente não encontrado"})
 		}
 		if errors.Is(err, customer.ErrInsufficientFunds) {
-			return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "saldo insuficiente"})
+			return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INSUFICIENT_BALANCE", Message: "Saldo insuficiente"})
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Message: err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
 	out := types.CustomerDto{ID: cust.ID, Nome: cust.Nome, Email: cust.Email, Saldo: cust.Saldo}
 	return c.JSON(out)
@@ -227,26 +236,27 @@ func (h *CustomerHandler) Deposit(c *fiber.Ctx) error {
 func (h *CustomerHandler) Withdraw(c *fiber.Ctx) error {
 	id64, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "id de cliente inválido"})
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_CUSTOMER_ID", Message: "Id de cliente inválido"})
 	}
 
-	var req types.TransactionRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "json inválido"})
+	req := &types.TransactionRequest{}
+	err = req.FromBody(c)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(&types.ErrorResponse{Code: "INVALID_REQUEST", Message: "Json inválido"})
 	}
-	if err := types.IsValidTransactionRequest(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: err.Error()})
+	if err := req.IsValid(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_REQUEST", Message: err.Error()})
 	}
 
-	cust, err := h.service.Withdraw(id64, req.Amount)
+	cust, err := h.service.Transactions(c.UserContext(), id64, req.Valor.Neg())
 	if err != nil {
 		if errors.Is(err, customer.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Message: "cliente não encontrado"})
+			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Code: "CUSTOMER_NOT_FOUND", Message: "Cliente não encontrado"})
 		}
 		if errors.Is(err, customer.ErrInsufficientFunds) {
-			return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Message: "saldo insuficiente"})
+			return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INSUFICIENT_BALANCE", Message: "Saldo insuficiente"})
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Message: err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
 	out := types.CustomerDto{ID: cust.ID, Nome: cust.Nome, Email: cust.Email, Saldo: cust.Saldo}
 	return c.JSON(out)

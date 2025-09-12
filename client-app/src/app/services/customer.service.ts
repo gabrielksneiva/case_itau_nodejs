@@ -37,11 +37,11 @@ export class CustomerService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  deposit(id: number, amount: number): Observable<Customer> {
-    return this.http.post<Customer>(`${this.apiUrl}/${id}/depositar`, { amount });
+  deposit(id: number, valor: number): Observable<Customer> {
+    return this.http.post<Customer>(`${this.apiUrl}/${id}/depositar`, { valor });
   }
 
-  withdraw(id: number, amount: number): Observable<Customer> {
-    return this.http.post<Customer>(`${this.apiUrl}/${id}/sacar`, { amount });
+  withdraw(id: number, valor: number): Observable<Customer> {
+    return this.http.post<Customer>(`${this.apiUrl}/${id}/sacar`, { valor });
   }
 }

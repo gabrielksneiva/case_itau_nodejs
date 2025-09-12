@@ -3,8 +3,8 @@ package api
 import (
 	"case-itau/api/handler"
 	"case-itau/config"
-	"case-itau/repository"
-	"case-itau/repository/connection"
+	"case-itau/repositories"
+	"case-itau/repositories/connection"
 	"case-itau/services/customer"
 	l "case-itau/utils/logger"
 
@@ -23,14 +23,13 @@ func Start() {
 	if err != nil {
 		l.Logger.Sugar().Fatalf("failed to connect database: %v", err)
 	}
-	err = db.AutoMigrate(&repository.Clientes{})
+	err = db.AutoMigrate(&repositories.Clientes{})
 	if err != nil {
 		l.Logger.Sugar().Fatalf("failed to migrate database: %v", err)
 	}
 
 	// init repo
-	repo := repository.NewCustomerRepository(db)
-	_ = repo.Migrate()
+	repo := repositories.NewGormRepository[repositories.Clientes](db)
 
 	// init services and handlers
 	svc := customer.NewService(repo)
