@@ -42,9 +42,7 @@ func (s *Service) GetByID(ctx context.Context, id int) (*repositories.Clientes, 
 
 func (s *Service) Create(ctx context.Context, input repositories.Clientes) (repositories.Clientes, error) {
 	input.Saldo = decimal.Zero
-	if input.Version == 0 {
-		input.Version = 1
-	}
+
 	if err := s.repo.InsertOne(ctx, &input); err != nil {
 		if strings.Contains(err.Error(), ErrUniqueEmail.Error()) {
 			return repositories.Clientes{}, ErrUniqueEmail
@@ -55,18 +53,6 @@ func (s *Service) Create(ctx context.Context, input repositories.Clientes) (repo
 }
 
 func (s *Service) Update(ctx context.Context, id int, input repositories.Clientes) (*repositories.Clientes, error) {
-	previous, err := s.repo.FindOne(ctx, fmt.Sprintf("id = %d", id))
-	if err != nil {
-		if strings.Contains(err.Error(), "record not found") {
-			return nil, ErrNotFound
-		}
-		return nil, err
-	}
-
-	if previous.Email == input.Email {
-		return nil, ErrUniqueEmail
-	}
-
 	update := make(map[string]any)
 	if input.Nome != "" {
 		update["nome"] = input.Nome

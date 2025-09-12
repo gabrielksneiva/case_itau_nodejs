@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  api:
+    build: ./client-api
+    env_file:
+      - .env
+    container_name: go-api
+    ports:
+      - "8080:8080"
+
+  web:
+    build: ./client-app
+    container_name: angular-app
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./client-app:/app   # hot reload (mapeia código local no container)
+      - /app/node_modules   # evita sobrescrever node_modules

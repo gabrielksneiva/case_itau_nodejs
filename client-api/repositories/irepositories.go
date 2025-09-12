@@ -17,7 +17,6 @@ type Clientes struct {
 	Nome    string          `gorm:"not null" json:"nome"`
 	Email   string          `gorm:"not null;unique" json:"email"`
 	Saldo   decimal.Decimal `gorm:"type:TEXT;not null" json:"saldo"`
-	Version int             `gorm:"not null;default:1" json:"version"`
 }
 
 type IRepository[T any] interface {
