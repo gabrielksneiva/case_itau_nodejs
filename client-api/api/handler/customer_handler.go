@@ -2,9 +2,12 @@ package handler
 
 import (
 	"errors"
+	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
 	"case-itau/api/types"
@@ -41,7 +44,7 @@ func (h *CustomerHandler) List(c *fiber.Ctx) error {
 	out := make([]types.CustomerDto, 0, len(list))
 	for _, it := range list {
 		out = append(out, types.CustomerDto{
-			ID: it.ID, Nome: it.Nome, Email: it.Email, Saldo: it.Saldo,
+			ID: it.ID, Name: it.Name, Email: it.Email, Balance: it.Balance,
 		})
 	}
 	return c.JSON(out)
@@ -53,24 +56,22 @@ func (h *CustomerHandler) List(c *fiber.Ctx) error {
 // @Tags         Clientes
 // @Accept       json
 // @Produce      json
-// @Param        id   path      int  true  "ID do usuário"
+// @Param        id   path      string  true  "ID do usuário"
 // @Success      200  {object}  types.CustomerDto
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /clientes/{id} [get]
 func (h *CustomerHandler) Get(c *fiber.Ctx) error {
-	id64, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_CUSTOMER_ID", Message: "Id de cliente inválido"})
-	}
-	cust, err := h.service.GetByID(c.UserContext(), id64)
+	id := c.Params("id")
+
+	cust, err := h.service.GetByID(c.UserContext(), id)
 	if err != nil {
 		if errors.Is(err, customer.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Code: "CUSTOMER_NOT_FOUND", Message: "Cliente não encontrado"})
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
-	out := types.CustomerDto{ID: cust.ID, Nome: cust.Nome, Email: cust.Email, Saldo: cust.Saldo}
+	out := types.CustomerDto{ID: cust.ID, Name: cust.Name, Email: cust.Email, Balance: cust.Balance}
 	return c.JSON(out)
 }
 
@@ -96,10 +97,11 @@ func (h *CustomerHandler) Create(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_REQUEST", Message: err.Error()})
 	}
 
-	model := repo.Clientes{
-		Nome:  req.Nome,
-		Email: req.Email,
-		Saldo: decimal.Zero,
+	model := repo.Customers{
+		ID:      uuid.New(),
+		Name:    req.Name,
+		Email:   req.Email,
+		Balance: decimal.Zero,
 	}
 	created, err := h.service.Create(c.UserContext(), model)
 	if err != nil {
@@ -108,7 +110,7 @@ func (h *CustomerHandler) Create(c *fiber.Ctx) error {
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
-	out := types.CustomerDto{ID: created.ID, Nome: created.Nome, Email: created.Email, Saldo: created.Saldo}
+	out := types.CustomerDto{ID: created.ID, Name: created.Name, Email: created.Email, Balance: created.Balance}
 
 	return c.Status(fiber.StatusCreated).JSON(out)
 }
@@ -119,20 +121,17 @@ func (h *CustomerHandler) Create(c *fiber.Ctx) error {
 // @Tags         Clientes
 // @Accept       json
 // @Produce      json
-// @Param        id        path      int  true  "ID do usuário"
+// @Param        id        path      string  true  "ID do usuário"
 // @Param        customer  body      types.UpdateCustomerRequest  true  "Dados do usuário"
 // @Success      200  {object}  types.CustomerDto
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /clientes/{id} [put]
 func (h *CustomerHandler) Update(c *fiber.Ctx) error {
-	id64, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_COSTUMER_ID", Message: "Id de cliente inválido"})
-	}
+	id := c.Params("id")
 
 	req := &types.CreateCustomerRequest{}
-	err = req.FromBody(c)
+	err := req.FromBody(c)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(&types.ErrorResponse{Code: "INVALID_REQUEST", Message: "Json inválido"})
 	}
@@ -140,8 +139,8 @@ func (h *CustomerHandler) Update(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_REQUEST", Message: err.Error()})
 	}
 
-	in := repo.Clientes{Nome: req.Nome, Email: req.Email}
-	updated, err := h.service.Update(c.UserContext(), id64, in)
+	in := repo.Customers{Name: req.Name, Email: req.Email}
+	updated, err := h.service.Update(c.UserContext(), id, in)
 	if err != nil {
 		if errors.Is(err, customer.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Code: "CUSTOMER_NOT_FOUND", Message: "Cliente não encontrado"})
@@ -151,7 +150,7 @@ func (h *CustomerHandler) Update(c *fiber.Ctx) error {
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
-	out := types.CustomerDto{ID: updated.ID, Nome: updated.Nome, Email: updated.Email, Saldo: updated.Saldo}
+	out := types.CustomerDto{ID: updated.ID, Name: updated.Name, Email: updated.Email, Balance: updated.Balance}
 	return c.JSON(out)
 }
 
@@ -161,17 +160,15 @@ func (h *CustomerHandler) Update(c *fiber.Ctx) error {
 // @Tags         Clientes
 // @Accept       json
 // @Produce      json
-// @Param        id   path      int  true  "ID do usuário"
+// @Param        id   path      string  true  "ID do usuário"
 // @Success      204  {object}  nil
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /clientes/{id} [delete]
 func (h *CustomerHandler) Delete(c *fiber.Ctx) error {
-	id64, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_COSTUMER_ID", Message: "Id de cliente inválido"})
-	}
-	if err := h.service.Delete(c.UserContext(), id64); err != nil {
+	id := c.Params("id")
+
+	if err := h.service.Delete(c.UserContext(), id); err != nil {
 		if errors.Is(err, customer.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Code: "CUSTOMER_NOT_FOUND", Message: "Cliente não encontrado"})
 		}
@@ -186,20 +183,17 @@ func (h *CustomerHandler) Delete(c *fiber.Ctx) error {
 // @Tags         Transações
 // @Accept       json
 // @Produce      json
-// @Param        id        path      int  true  "ID do usuário"
+// @Param        id        path      string  true  "ID do usuário"
 // @Param        deposit  body      types.TransactionRequest  true  "Dados do depósito"
 // @Success      200  {object}  types.CustomerDto
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /clientes/{id}/depositar [post]
 func (h *CustomerHandler) Deposit(c *fiber.Ctx) error {
-	id64, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_COSTUMER_ID", Message: "Id de cliente inválido"})
-	}
+	id := c.Params("id")
 
 	req := &types.TransactionRequest{}
-	err = req.FromBody(c)
+	err := req.FromBody(c)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(&types.ErrorResponse{Code: "INVALID_REQUEST", Message: "Json inválido"})
 	}
@@ -207,7 +201,7 @@ func (h *CustomerHandler) Deposit(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_REQUEST", Message: err.Error()})
 	}
 
-	cust, err := h.service.Transactions(c.UserContext(), id64, req.Valor)
+	cust, err := h.service.Transactions(c.UserContext(), id, req.Amount)
 	if err != nil {
 		if errors.Is(err, customer.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Code: "CUSTOMER_NOT_FOUND", Message: "Cliente não encontrado"})
@@ -217,7 +211,7 @@ func (h *CustomerHandler) Deposit(c *fiber.Ctx) error {
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
-	out := types.CustomerDto{ID: cust.ID, Nome: cust.Nome, Email: cust.Email, Saldo: cust.Saldo}
+	out := types.CustomerDto{ID: cust.ID, Name: cust.Name, Email: cust.Email, Balance: cust.Balance}
 	return c.JSON(out)
 }
 
@@ -227,20 +221,17 @@ func (h *CustomerHandler) Deposit(c *fiber.Ctx) error {
 // @Tags         Transações
 // @Accept       json
 // @Produce      json
-// @Param        id        path      int  true  "ID do usuário"
+// @Param        id        path      string  true  "ID do usuário"
 // @Param        withdraw  body      types.TransactionRequest  true  "Dados do saque"
 // @Success      200  {object}  types.CustomerDto
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /clientes/{id}/sacar [post]
 func (h *CustomerHandler) Withdraw(c *fiber.Ctx) error {
-	id64, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_CUSTOMER_ID", Message: "Id de cliente inválido"})
-	}
+	id := c.Params("id")
 
 	req := &types.TransactionRequest{}
-	err = req.FromBody(c)
+	err := req.FromBody(c)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(&types.ErrorResponse{Code: "INVALID_REQUEST", Message: "Json inválido"})
 	}
@@ -248,7 +239,7 @@ func (h *CustomerHandler) Withdraw(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{Code: "INVALID_REQUEST", Message: err.Error()})
 	}
 
-	cust, err := h.service.Transactions(c.UserContext(), id64, req.Valor.Neg())
+	cust, err := h.service.Transactions(c.UserContext(), id, req.Amount.Neg())
 	if err != nil {
 		if errors.Is(err, customer.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(types.ErrorResponse{Code: "CUSTOMER_NOT_FOUND", Message: "Cliente não encontrado"})
@@ -258,6 +249,75 @@ func (h *CustomerHandler) Withdraw(c *fiber.Ctx) error {
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()})
 	}
-	out := types.CustomerDto{ID: cust.ID, Nome: cust.Nome, Email: cust.Email, Saldo: cust.Saldo}
+	out := types.CustomerDto{ID: cust.ID, Name: cust.Name, Email: cust.Email, Balance: cust.Balance}
 	return c.JSON(out)
+}
+
+// GetTransactions retorna o histórico de transações de um cliente com paginação.
+//
+// GetTransactions godoc
+// @Summary      Lista todas as transações de um usuário
+// @Description  Endpoint para listar o histórico de transações de um cliente, com suporte a paginação via query params `page` e `size`.
+// @Tags         Transações
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string true  "ID do usuário (UUID)"
+// @Param        page  query     int    false "Número da página (default: 1)"
+// @Param        size  query     int    false "Itens por página (default: 10)"
+// @Success      200  {object}  map[string]interface{}  "Retorna metadados de paginação e a lista de transações"
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /clientes/{id}/transacoes [get]
+func (h *CustomerHandler) GetTransactions(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	size, _ := strconv.Atoi(c.Query("size", "10"))
+
+	if _, err := h.service.GetByID(c.UserContext(), id); err != nil {
+		if errors.Is(err, customer.ErrNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(
+				types.ErrorResponse{Code: "CUSTOMER_NOT_FOUND", Message: "Cliente não encontrado"},
+			)
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(
+			types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()},
+		)
+	}
+
+	txs, total, err := h.service.ListTransactions(c.UserContext(), id, page, size)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(
+			types.ErrorResponse{Code: "INTERNAL_ERROR", Message: err.Error()},
+		)
+	}
+
+	totalPages := int(math.Ceil(float64(total) / float64(size)))
+
+	if page > totalPages && totalPages != 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(types.ErrorResponse{
+			Code:    "INVALID_PAGE",
+			Message: fmt.Sprintf("A página %d não existe. Total de páginas: %d", page, totalPages),
+		})
+	}
+
+	out := make([]types.TransactionDto, 0, len(txs))
+	for _, t := range txs {
+		out = append(out, types.TransactionDto{
+			TransactionID: t.TransactionID,
+			CustomerID:    t.CustomerID,
+			Amount:        t.Amount,
+			Type:          t.Type,
+			CreatedAt:     t.CreatedAt,
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"page":        page,
+		"size":        size,
+		"total_items": total,
+		"total_pages": totalPages,
+		"items":       out,
+	})
 }

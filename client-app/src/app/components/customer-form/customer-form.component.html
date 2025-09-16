@@ -1,5 +1,5 @@
 <mat-card class="mat-elevation-z4 form-card">
-  <mat-card-header >
+  <mat-card-header>
     <mat-icon mat-card-avatar color="primary">person_add</mat-icon>
     <mat-card-title>{{ isEdit ? 'Editar Cliente' : 'Novo Cliente' }}</mat-card-title>
     <mat-card-subtitle>Preencha os dados abaixo</mat-card-subtitle>
@@ -9,8 +9,8 @@
     <form [formGroup]="form" (ngSubmit)="submit()" class="form-container">
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Nome Completo</mat-label>
-        <input matInput formControlName="nome" required cdkFocusInitial>
-        <mat-error *ngIf="form.get('nome')?.hasError('required')">
+        <input matInput formControlName="name" required cdkFocusInitial>
+        <mat-error *ngIf="form.get('name')?.hasError('required')">
           O nome é obrigatório.
         </mat-error>
       </mat-form-field>
@@ -30,8 +30,13 @@
         <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || loading">
           <mat-icon>save</mat-icon> {{ isEdit ? 'Atualizar Cliente' : 'Salvar Cliente' }}
         </button>
+
         <button mat-stroked-button type="button" (click)="cancel()">
           <mat-icon>cancel</mat-icon> Cancelar
+        </button>
+
+        <button *ngIf="isEdit" mat-flat-button color="accent" type="button" (click)="goToTransactions()">
+          <mat-icon>list</mat-icon> Listar Transações
         </button>
       </div>
 

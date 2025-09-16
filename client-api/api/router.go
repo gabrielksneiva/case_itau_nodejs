@@ -40,4 +40,5 @@ func Register(app *fiber.App, db *gorm.DB, cfg *config.Config, h *handler.Custom
 	v1.Delete("/:id", h.Delete)
 	v1.Post("/:id/depositar", h.Deposit)
 	v1.Post("/:id/sacar", h.Withdraw)
+	v1.Get("/:id/transacoes", h.GetTransactions)
 }

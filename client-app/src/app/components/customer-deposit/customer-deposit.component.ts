@@ -35,26 +35,24 @@ export class CustomerDepositComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const idStr = this.route.snapshot.paramMap.get('id');
-    if (idStr) {
-      const customerId = Number(idStr);
-      this.customerService.getById(customerId).subscribe({
-        next: data => this.customer = data,
-        error: () => this.router.navigate(['/clientes'])
-      });
-    } else {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (!id) {
       this.router.navigate(['/clientes']);
+      return;
     }
+
+    this.customerService.getById(id).subscribe({
+      next: data => this.customer = data,
+      error: () => this.router.navigate(['/clientes'])
+    });
   }
 
-  handleTransaction(formData: { valor: number }): void {
+  handleTransaction(formData: { amount: number }) {
     if (!this.customer) return;
-
     this.isLoading = true;
     this.errorMessage = undefined;
-    const valor = formData.valor;
-    
-    this.customerService.deposit(this.customer.id, valor).subscribe({
+
+    this.customerService.deposit(this.customer.id, formData.amount).subscribe({
       next: () => {
         this.snackBar.open('Depósito realizado com sucesso', 'Fechar', {
           duration: 4000,
@@ -65,20 +63,13 @@ export class CustomerDepositComponent implements OnInit {
         this.router.navigate(['/clientes']);
       },
       error: (err) => {
-        const msg = err.error?.message || err.error?.erro || 'Erro inesperado';
-        this.snackBar.open(msg, 'Fechar', {
-          duration: 5000,
-          horizontalPosition: 'center',
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.errorMessage = err.error?.message || 'Erro inesperado';
         this.isLoading = false;
       }
     });
   }
 
-  goBack(): void {
+  goBack() {
     this.router.navigate(['/clientes']);
   }
 }
-

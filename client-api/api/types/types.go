@@ -3,30 +3,40 @@ package types
 import (
 	validations "case-itau/utils/validation"
 	"errors"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
 type CustomerDto struct {
-	ID    int             `json:"id"`
-	Nome  string          `json:"nome"`
-	Email string          `json:"email"`
-	Saldo decimal.Decimal `json:"saldo"`
+	ID      uuid.UUID       `json:"id"`
+	Name    string          `json:"name"`
+	Email   string          `json:"email"`
+	Balance decimal.Decimal `json:"balance"`
+}
+
+type TransactionDto struct {
+	TransactionID uuid.UUID       `json:"transaction_id"`
+	CustomerID    uuid.UUID       `json:"customer_id"`
+	Amount        decimal.Decimal `json:"value"`
+	Type          string          `json:"type"`
+	CreatedAt     time.Time       `json:"created_at"`
 }
 
 type CreateCustomerRequest struct {
-	Nome  string `json:"nome" validate:"required,min=2"`
+	Name  string `json:"name" validate:"required,min=2"`
 	Email string `json:"email" validate:"required,email"`
 }
 
 type UpdateCustomerRequest struct {
-	Nome  string `json:"nome" validate:"required,min=2"`
+	Name  string `json:"name" validate:"required,min=2"`
 	Email string `json:"email" validate:"required,email"`
 }
 
 type TransactionRequest struct {
-	Valor decimal.Decimal `json:"valor" validate:"required"`
+	Amount decimal.Decimal `json:"amount" validate:"required"`
 }
 
 type ErrorResponse struct {
@@ -51,7 +61,7 @@ func (fi *UpdateCustomerRequest) FromBody(ctx *fiber.Ctx) error {
 }
 
 func (fi *TransactionRequest) IsValid(t *TransactionRequest) error {
-	if t.Valor.LessThanOrEqual(decimal.Zero) {
+	if t.Amount.LessThanOrEqual(decimal.Zero) {
 		return errors.New("valor da transação deve ser maior que zero")
 	}
 	return validations.Validate(t)

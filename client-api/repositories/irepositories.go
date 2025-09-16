@@ -3,7 +3,9 @@ package repositories
 import (
 	"context"
 	"errors"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
@@ -12,11 +14,20 @@ var (
 	ErrRepoInsufficientFund = errors.New("saldo insuficiente")
 )
 
-type Clientes struct {
-	ID      int             `gorm:"primaryKey;autoIncrement" json:"id"`
-	Nome    string          `gorm:"not null" json:"nome"`
+type Customers struct {
+	ID      uuid.UUID       `gorm:"type:uuid;primaryKey" json:"id"`
+	Name    string          `gorm:"not null" json:"name"`
 	Email   string          `gorm:"not null;unique" json:"email"`
-	Saldo   decimal.Decimal `gorm:"type:TEXT;not null" json:"saldo"`
+	Balance decimal.Decimal `gorm:"type:TEXT;not null" json:"balance"`
+}
+
+type Transaction struct {
+	TransactionID uuid.UUID       `gorm:"type:uuid;primaryKey" json:"transaction_id"`
+	CustomerID    uuid.UUID       `gorm:"type:uuid;not null;index" json:"customer_id"`
+	Customer      Customers       `gorm:"foreignKey:CustomerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
+	Amount        decimal.Decimal `gorm:"type:text;not null" json:"amount"`
+	Type          string          `gorm:"type:text;not null" json:"type"`
+	CreatedAt     time.Time       `gorm:"autoCreateTime" json:"created_at"`
 }
 
 type IRepository[T any] interface {

@@ -18,7 +18,7 @@ import { ActivatedRoute, Router } from '@angular/router';
   `
 })
 export class CustomerDeleteComponent implements OnInit {
-  id?: number;
+  id?: string;
   error?: string;
 
   constructor(
@@ -29,7 +29,6 @@ export class CustomerDeleteComponent implements OnInit {
 
   ngOnInit(): void {
     const idStr = this.route.snapshot.paramMap.get('id');
-    this.id = idStr ? Number(idStr) : undefined;
   }
 
   confirmDelete() {

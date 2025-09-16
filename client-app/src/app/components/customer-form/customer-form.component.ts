@@ -14,7 +14,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 @Component({
   selector: 'app-customer-form',
   standalone: true,
-  imports: [CommonModule,
+  imports: [
+    CommonModule,
     ReactiveFormsModule,
     MatCardModule,
     MatIconModule,
@@ -22,14 +23,14 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     MatInputModule,
     MatButtonModule,
     MatProgressBarModule,
-    MatSnackBarModule 
+    MatSnackBarModule
   ],
   templateUrl: './customer-form.component.html'
 })
 export class CustomerFormComponent implements OnInit {
   form!: FormGroup;
   isEdit = false;
-  id?: number;
+  id?: string;
   loading = false;
   error?: string;
 
@@ -38,10 +39,10 @@ export class CustomerFormComponent implements OnInit {
     private service: CustomerService,
     private router: Router,
     private route: ActivatedRoute,
-    private snackBar: MatSnackBar 
+    private snackBar: MatSnackBar
   ) {
     this.form = this.fb.group({
-      nome: ['', [Validators.required, Validators.minLength(2)]],
+      name: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
     });
   }
@@ -50,14 +51,14 @@ export class CustomerFormComponent implements OnInit {
     const idStr = this.route.snapshot.paramMap.get('id');
     if (idStr) {
       this.isEdit = true;
-      this.id = Number(idStr);
+      this.id = idStr;
       this.loading = true;
       this.service.getById(this.id).subscribe({
-        next: (c) => {
-          this.form.patchValue({ nome: c.nome, email: c.email, saldo: c.saldo });
+        next: (c: Customer) => {
+          this.form.patchValue({ name: c.name, email: c.email });
           this.loading = false;
         },
-        error: (err) => {
+        error: () => {
           this.error = 'Erro ao carregar cliente';
           this.loading = false;
         }
@@ -69,6 +70,7 @@ export class CustomerFormComponent implements OnInit {
     if (this.form.invalid) return;
     this.loading = true;
     const payload = this.form.value;
+
     const obs = this.isEdit && this.id
       ? this.service.update(this.id, payload)
       : this.service.create(payload);
@@ -101,8 +103,13 @@ export class CustomerFormComponent implements OnInit {
     });
   }
 
-
   cancel() {
     this.router.navigate(['/clientes']);
+  }
+
+  goToTransactions() {
+    if (this.id) {
+      this.router.navigate([`/clientes/${this.id}/transacoes`]);
+    }
   }
 }

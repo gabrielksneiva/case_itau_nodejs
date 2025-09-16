@@ -114,7 +114,7 @@ const docTemplate = `{
                 "summary": "Obtém um usuário pelo ID",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID do usuário",
                         "name": "id",
                         "in": "path",
@@ -158,7 +158,7 @@ const docTemplate = `{
                 "summary": "Atualiza um usuário existente",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID do usuário",
                         "name": "id",
                         "in": "path",
@@ -211,7 +211,7 @@ const docTemplate = `{
                 "summary": "Deleta um usuário pelo ID",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID do usuário",
                         "name": "id",
                         "in": "path",
@@ -254,7 +254,7 @@ const docTemplate = `{
                 "summary": "Deposita um valor na conta do usuário",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID do usuário",
                         "name": "id",
                         "in": "path",
@@ -309,7 +309,7 @@ const docTemplate = `{
                 "summary": "Saca um valor da conta do usuário",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ID do usuário",
                         "name": "id",
                         "in": "path",
@@ -348,6 +348,72 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/clientes/{id}/transacoes": {
+            "get": {
+                "description": "Endpoint para listar o histórico de transações de um cliente, com suporte a paginação via query params ` + "`" + `page` + "`" + ` e ` + "`" + `size` + "`" + `.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transações"
+                ],
+                "summary": "Lista todas as transações de um usuário",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID do usuário (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Número da página (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Itens por página (default: 10)",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Retorna metadados de paginação e a lista de transações",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -355,13 +421,13 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
-                "nome"
+                "name"
             ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
-                "nome": {
+                "name": {
                     "type": "string",
                     "minLength": 2
                 }
@@ -370,27 +436,27 @@ const docTemplate = `{
         "types.CustomerDto": {
             "type": "object",
             "properties": {
+                "balance": {
+                    "type": "number"
+                },
                 "email": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
-                },
-                "nome": {
                     "type": "string"
                 },
-                "saldo": {
-                    "type": "number"
+                "name": {
+                    "type": "string"
                 }
             }
         },
         "types.TransactionRequest": {
             "type": "object",
             "required": [
-                "valor"
+                "amount"
             ],
             "properties": {
-                "valor": {
+                "amount": {
                     "type": "number"
                 }
             }
@@ -399,13 +465,13 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
-                "nome"
+                "name"
             ],
             "properties": {
                 "email": {
                     "type": "string"
                 },
-                "nome": {
+                "name": {
                     "type": "string",
                     "minLength": 2
                 }

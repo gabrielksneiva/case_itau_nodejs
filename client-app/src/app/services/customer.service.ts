@@ -3,12 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface Customer {
-  id: number;
-  nome: string;
+  id: string;
+  name: string;
   email: string;
-  saldo: number;
-  saldoOculto?: boolean;                 
-  saldoUpdatedAt?: string | Date;  
+  balance: number;
+  balanceOculto?: boolean;                 
+  balanceUpdatedAt?: string | Date;  
 }
 
 @Injectable({ providedIn: 'root' })
@@ -21,27 +21,31 @@ export class CustomerService {
     return this.http.get<Customer[]>(this.apiUrl);
   }
 
-  getById(id: number): Observable<Customer> {
+  getById(id: string): Observable<Customer> {
     return this.http.get<Customer>(`${this.apiUrl}/${id}`);
   }
 
-  create(payload: Partial<Customer>): Observable<Customer> {
+  create(payload: { name: string; email: string }): Observable<Customer> {
     return this.http.post<Customer>(this.apiUrl, payload);
   }
 
-  update(id: number, payload: Partial<Customer>): Observable<Customer> {
+  update(id: string, payload: { name: string; email: string }): Observable<Customer> {
     return this.http.put<Customer>(`${this.apiUrl}/${id}`, payload);
   }
 
-  delete(id: number): Observable<void> {
+  delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  deposit(id: number, valor: number): Observable<Customer> {
-    return this.http.post<Customer>(`${this.apiUrl}/${id}/depositar`, { valor });
+  deposit(id: string, amount: number): Observable<Customer> {
+    return this.http.post<Customer>(`${this.apiUrl}/${id}/depositar`, { amount });
   }
 
-  withdraw(id: number, valor: number): Observable<Customer> {
-    return this.http.post<Customer>(`${this.apiUrl}/${id}/sacar`, { valor });
+  withdraw(id: string, amount: number): Observable<Customer> {
+    return this.http.post<Customer>(`${this.apiUrl}/${id}/sacar`, { amount });
+  }
+
+  getTransactions(id: string, page = 1, size = 10): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${id}/transacoes?page=${page}&size=${size}`);
   }
 }

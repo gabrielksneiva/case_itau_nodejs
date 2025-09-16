@@ -1,7 +1,9 @@
-/* ========== CSS FINAL PARA O COMPONENTE DE CLIENTES ========== */
-/* Global Styles */
+/* ========== SCSS FINAL PARA O COMPONENTE DE CLIENTES (LIGHT & DARK MODE) ========== */
+
+/* Import de fontes */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
+/* ===================== Variáveis ===================== */
 :root {
   --bg-page: #f4f7f9;
   --bg-card: #ffffff;
@@ -12,6 +14,8 @@
   --primary-color: #3f51b5;
   --accent-color: #009688;
   --warn-color: #d32f2f;
+  --green: #4caf50;
+  --red: #f44336;
 }
 
 [data-theme="dark"] {
@@ -24,9 +28,11 @@
   --primary-color: #7986cb;
   --accent-color: #4db6ac;
   --warn-color: #e57373;
+  --green: #81c784;
+  --red: #e57373;
 }
 
-/* Resets e tipografia */
+/* ===================== Reset e tipografia ===================== */
 body {
   font-family: 'Inter', Roboto, sans-serif;
   background-color: var(--bg-page);
@@ -36,7 +42,6 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Tela-reader only utility */
 .sr-only {
   position: absolute !important;
   width: 1px; height: 1px;
@@ -45,7 +50,7 @@ body {
   white-space: nowrap; border: 0;
 }
 
-/* Layout principal */
+/* ===================== Layout ===================== */
 .container {
   width: 100%;
   max-width: 1280px;
@@ -70,7 +75,7 @@ body {
   gap: 0.75rem;
 }
 
-/* Material base adjustments */
+/* ===================== Material adjustments ===================== */
 button.mat-raised-button,
 button.mat-flat-button,
 button.mat-stroked-button {
@@ -95,14 +100,13 @@ button.mat-flat-button[color="warn"] {
   align-items: center;
 }
 
-/* Grid de clientes */
+/* ===================== Cards e Grid ===================== */
 .customer-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 1.5rem;
 }
 
-/* Card */
 .client-card {
   background-color: var(--bg-card);
   color: var(--text-primary);
@@ -112,368 +116,331 @@ button.mat-flat-button[color="warn"] {
   display: flex;
   flex-direction: column;
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+  }
+
+  .mat-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mat-card-subtitle {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mat-card-content {
+    flex-grow: 1;
+  }
 }
 
-.client-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.12);
-}
-
-.client-card .mat-card-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.client-card .mat-card-subtitle {
-  font-size: 0.9rem;
-  opacity: 0.7;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.client-card .mat-card-content {
-  flex-grow: 1;
-}
-
-/* Delete button less aggressive */
-.customer-grid .action-delete {
-  color: var(--warn-color) !important;
-  border-color: var(--warn-color) !important;
-  margin-left: 0.5rem;
-}
-
-.snackbar-success {
-  background-color: #2e7d32;
-  color: #fff;
-  font-weight: 500;
-}
-
-.snackbar-error {
-  background-color: #d32f2f;
-  color: #fff;
-  font-weight: 500;
-}
-
-/* Saldo: variante 2 (label sutil + valor) */
+/* ===================== Saldo detalhado ===================== */
 .saldo-detailed {
   display: inline-flex;
   flex-direction: column;
   gap: 0.125rem;
   align-items: flex-start;
   padding-bottom: 0.5rem;
+
+  .saldo-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .saldo-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    opacity: 0.85;
+  }
+
+  .toggle-saldo {
+    height: 36px;
+    width: 36px;
+    min-width: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+  }
+
+  .saldo-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--saldo-color);
+    background-color: rgba(46,125,50,0.06);
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+
+    &.negative {
+      color: var(--warn-color);
+      background-color: rgba(211,47,47,0.06);
+      border: 1px solid rgba(211,47,47,0.08);
+    }
+  }
+
+  .saldo-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+  }
 }
 
-.saldo-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.saldo-label {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  font-weight: 600;
-  opacity: 0.85;
-}
-
-.toggle-saldo {
-  height: 36px;
-  width: 36px;
-  min-width: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-}
-
-.saldo-value {
-  font-size: 1.15rem;
-  font-weight: 700;
-  line-height: 1.2;
-  color: var(--saldo-color);
-  background-color: rgba(46,125,50,0.06);
-  padding: 0.2rem 0.5rem;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  box-sizing: border-box;
-}
-
-.saldo-value.negative {
-  color: var(--warn-color);
-  background-color: rgba(211,47,47,0.06);
-  border: 1px solid rgba(211,47,47,0.08);
-}
-
-.saldo-meta {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-top: 0.25rem;
-}
-
-/* Ações: grid com largura mínima maior para evitar corte de conteúdo */
-/* MINIMUM CELL WIDTH definido para 160px para evitar aperto com ícone+texto */
-/* ===== Alinhar os botões numa única linha e restaurar cores ===== */
-
-/* Container: uma linha só, permite scroll horizontal em telas pequenas */
-/* Ações: auto-regulação em linha única */
+/* ===================== Card actions ===================== */
 .card-actions {
   display: flex;
-  flex-wrap: nowrap;                /* mantém tudo em uma linha */
+  flex-wrap: nowrap;
   gap: 0.75rem;
   align-items: center;
   justify-content: flex-end;
   padding: 1rem;
   border-top: 1px solid var(--border-color);
   margin-top: auto;
-  min-width: 0;                     /* garante encolhimento no flex */
-  overflow-x: auto;                 /* scroll horizontal se faltar espaço */
-  -webkit-overflow-scrolling: touch; /* rolagem suave em mobile */
-}
-
-/* Esconde scrollbar de forma discreta */
-.card-actions::-webkit-scrollbar { height: 6px; }
-.card-actions::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 10px; }
-
-/* Botões: auto-ajustáveis */
-.card-actions button {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.7rem;
-  min-height: 44px;
-  border-radius: 10px;
-  font-weight: 600;
-  box-sizing: border-box;
-  white-space: nowrap;
-  flex: 1 1 auto;         /* permite crescer/encolher */
-  min-width: 50px;        /* não fica apertado demais */
-  max-width: 180px;       /* não fica gigante */
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-
-/* Icon + label: comportamento seguro para o wrapper interno do MDC */
-.card-actions button .mdc-button__label,
-.card-actions button .mat-button-wrapper {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 0rem;
-  min-width: 0 !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-
-/* Ícone herda cor do botão e não empurra o texto */
-.card-actions button mat-icon,
-.card-actions button .mat-icon {
-  flex: 0 0 auto !important;
-  font-size: 18px !important;
-  color: inherit !important;  /* garante que o ícone acompanhe a cor do texto/borda */
-}
-
-/* --- CORES POR AÇÃO --- */
-/* Editar: usa accent (se você usa color="accent" no template) */
-.card-actions button[color="accent"],
-.card-actions button.edit-button {
-  color: var(--accent-color) !important;
-  border-color: var(--accent-color) !important;
-}
-
-/* Depositar: verde */
-.card-actions button.action-deposit {
-  color: var(--saldo-color) !important;
-  border-color: var(--saldo-color) !important;
-}
-
-/* Sacar: laranja/aviso */
-.card-actions button.action-withdraw {
-  color: #f57c00 !important;
-  border-color: #f57c00 !important;
-}
-
-/* Hover/active: leve preenchimento com opacidade da cor (visual feedback) */
-.card-actions button:hover {
-  background-color: rgba(0,0,0,0.03);
-}
-.card-actions button.action-deposit:hover {
-  background-color: rgba(46,125,50,0.06);
-}
-.card-actions button.action-withdraw:hover {
-  background-color: rgba(245,124,0,0.06);
-}
-.card-actions button[color="accent"]:hover,
-.card-actions button.edit-button:hover {
-  background-color: rgba(0,0,0,0.03); /* ou rgba(0,150,136,0.06) se quiser tint mais forte */
-}
-
-/* foco acessível sem mudar layout */
-.card-actions button:focus-visible {
-  outline: 3px solid rgba(63,81,181,0.18);
-  outline-offset: 2px;
-}
-
-@media (max-width: 420px) {
-  .card-actions {
-    justify-content: center;
-  }
-  .card-actions button {
-    width: 100%;
-    padding: 0.6rem 1rem;
-  }
-  .card-actions button .mat-button-wrapper {
-    gap: 0.25rem;
-  }
-}
-
-/* Header layout */
-.mat-card-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  position: relative;
-}
-.header-text {
-  flex: 1;
   min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.7rem;
+    min-height: 44px;
+    border-radius: 10px;
+    font-weight: 600;
+    box-sizing: border-box;
+    white-space: nowrap;
+    flex: 1 1 auto;
+    min-width: 50px;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    .mdc-button__label,
+    .mat-button-wrapper {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0rem;
+      min-width: 0 !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+    }
+
+    mat-icon, .mat-icon {
+      flex: 0 0 auto !important;
+      font-size: 18px !important;
+      color: inherit !important;
+    }
+
+    &[color="accent"], &.edit-button { color: var(--accent-color) !important; border-color: var(--accent-color) !important; }
+    &.action-deposit { color: var(--saldo-color) !important; border-color: var(--saldo-color) !important; }
+    &.action-withdraw { color: #f57c00 !important; border-color: #f57c00 !important; }
+
+    &:hover { background-color: rgba(0,0,0,0.03); }
+    &.action-deposit:hover { background-color: rgba(46,125,50,0.06); }
+    &.action-withdraw:hover { background-color: rgba(245,124,0,0.06); }
+    &[color="accent"]:hover,
+    &.edit-button:hover { background-color: rgba(0,0,0,0.03); }
+
+    &:focus-visible { outline: 3px solid rgba(63,81,181,0.18); outline-offset: 2px; }
+  }
 }
 
-/* Delete button menos agressivo no header */
-.action-delete {
-  margin-left: 0.5rem;
-}
-
-/* Form card e campos */
-.form-card {
+/* ===================== Form & empty state ===================== */
+.form-card, .empty-state {
   background-color: var(--bg-card);
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  max-width: 700px;
-  margin: 2rem auto;
-  padding: 0;
+  color: var(--text-primary);
 }
-
-.form-card .mat-card-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  padding-bottom: 2rem;
-}
-
-/* Outros estilos já existentes */
-.form-card .mat-mdc-card-header-text { margin-left: 1rem; margin-bottom: 0.5rem; padding-bottom: 2rem; margin-top: 0.5rem; }
-.form-card .mat-card-title { margin-bottom: 0.75rem; font-size: 1.5rem; font-weight: 600; padding-bottom: 2rem; }
-.form-card .mat-card-subtitle { margin-bottom: 0.75rem; font-size: 1.5rem; font-weight: 600; padding-bottom: 2rem; }
-.form-card .mat-card-content { padding: 3rem 2rem 2rem; }
-
-.form-container { display: flex; flex-direction: column; gap: 1.75rem; }
-.form-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; align-items: center; flex-wrap: wrap; }
-
-.mat-mdc-form-field { transition: all 0.3s ease-in-out; }
-.mat-mdc-form-field.mat-focused { background-color: rgba(63,81,181,0.04); border-radius: 4px; }
 
 .empty-state {
   display: flex; flex-direction: column; justify-content: center; align-items: center;
-  text-align: center; padding: 4rem 2rem; background-color: var(--bg-card);
-  border-radius: 16px; margin-top: 2rem; color: var(--text-secondary);
-  border: 1px solid var(--border-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
-}
-.empty-state-icon { font-size: 5rem; width: 5rem; height: 5rem; margin-bottom: 1rem; opacity: 0.5; }
-.empty-state h2 { font-size: 1.5rem; font-weight: 600; color: var(--text-primary); margin: 0 0 0.5rem; }
-.empty-state p { max-width: 400px; line-height: 1.5; }
-
-.dialog-title { display: flex; align-items: center; gap: 0.75rem; font-weight: 600; color: var(--text-primary); }
-.dialog-content { color: var(--text-secondary); padding: 0 1.5rem 1.5rem 1.5rem; line-height: 1.6; }
-.dialog-actions { padding: 0 1.5rem 1.5rem; }
-
-.full-width { width: 100%; padding-left: 1.5rem; }
-.mat-form-field-appearance-outline .mat-mdc-form-field-flex { padding-left: 12px; }
-.error-message { color: var(--warn-color); margin-top: 1rem; font-weight: 500; text-align: center; }
-
-/* Responsividade */
-@media (max-width: 420px) {
-  .page-title { font-size: 1.25rem; }
-  .card-actions { grid-template-columns: 1fr; }
-  .saldo-value { width: 100%; box-sizing: border-box; }
-  .toggle-saldo { height: 40px; width: 40px; }
+  text-align: center; padding: 4rem 2rem;
+  border-radius: 16px; margin-top: 2rem;
+  border: 1px solid var(--border-color); 
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
 }
 
-.btn-cancel {
-  color: var(--text-secondary);
-  border-color: var(--border-color);
-}
-
-.btn-delete {
-  background-color: var(--warn-color) !important;
-  color: #fff !important;
-}
-
-.btn-delete:hover {
-  background-color: #b71c1c !important; /* tom mais escuro no hover */
-}
-
-.app-header h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.app-header button {
-  font-size: 0.9rem;
-  padding: 0.5rem 1rem;
-  transition: background-color 0.3s, color 0.3s;
-}
-
-.app-header button:hover {
-  background-color: var(--btn-hover-bg);
-}
-
+/* ===================== Gradiente H1 ===================== */
 h1 {
   font-family: 'Inter', sans-serif;
-  font-size: 1.8rem; /* Desktop */
+  font-size: 1.8rem;
   font-weight: 700;
   line-height: 1.2;
-  color: var(--text-primary);
-  background: linear-gradient(45deg, #002663 0%, #004080 50%, #FF7900 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin: 0;
-  margin-right: 1rem;
+  margin: 0; margin-right: 1rem;
   transform: scale(1.02);
   transition: background 0.3s ease, transform 0.2s ease;
   text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  background: linear-gradient(45deg, #002663 0%, #004080 50%, #FF7900 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  [data-theme="dark"] & {
+    background: none;
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: var(--text-primary);
+  }
 }
 
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem;
-  border-radius: 8px;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+/* ===================== Tabela de Transações Melhorada ===================== */
+.transaction-card table.mat-mdc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  table-layout: fixed;
+  min-width: 600px; /* garante leitura em telas pequenas */
+  transition: color 0.3s ease, background-color 0.3s ease;
+
+  th.mat-mdc-header-cell,
+  td.mat-mdc-cell,
+  td.mat-mdc-footer-cell {
+    padding: 0.6rem 0.75rem;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  th.mat-mdc-header-cell {
+    font-weight: 600;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  tr.mat-mdc-row {
+    transition: background-color 0.2s ease;
+  }
+
+  tr.mat-mdc-row:nth-child(odd) {
+    background-color: rgba(0,0,0,0.015);
+  }
+
+  tr.mat-mdc-row:hover {
+    background-color: rgba(0,0,0,0.05);
+  }
+
+  td.mat-mdc-footer-cell {
+    font-weight: 600;
+  }
 }
 
-.theme-toggle:hover {
-  transform: scale(1.1);
-  background-color: rgba(0,0,0,0.05);
+/* ===================== Dark Mode ===================== */
+[data-theme="dark"] .transaction-card table.mat-mdc-table {
+  color: var(--text-primary);
+
+  th.mat-mdc-header-cell {
+    background-color: #1a1a1a;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+
+  tr.mat-mdc-row:nth-child(odd) {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  tr.mat-mdc-row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  td.mat-mdc-cell, td.mat-mdc-footer-cell {
+    color: var(--text-primary);
+  }
 }
 
-.theme-icon {
-  font-size: 24px;
-  transition: transform 0.3s ease, color 0.3s ease;
+/* ===================== Coluna Tipo com badges ===================== */
+.type-cell {
+  display: table-cell;
+  vertical-align: middle;
+  padding: 0.6rem 0.75rem;
+
+  .type-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  span.tx-text {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  mat-icon.deposit,
+  mat-icon.withdrawal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;          // tamanho do quadrado
+    height: 22px;
+    border-radius: 4px;
+    font-size: 14px;      // tamanho da seta
+    padding: 0;
+    opacity: 0;            // inicia invisível
+    transform: scale(0.8); // inicia levemente menor
+    animation: icon-appear 0.3s forwards; // animação de entrada
+  }
+
+  mat-icon.deposit {
+    color: var(--green);
+    background-color: rgba(76,175,80,0.15);
+  }
+
+  mat-icon.withdrawal {
+    color: var(--red);
+    background-color: rgba(244,67,54,0.15);
+  }
 }
 
-.theme-icon.dark {
-  transform: rotate(360deg);
-  color: #FFC107; /* Lua/sol amarelo para destaque */
+// ===================== Animação do ícone =====================
+@keyframes icon-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+/* ===================== Responsividade ===================== */
+@media (max-width: 768px) {
+  .transaction-card table.mat-mdc-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .transaction-card table.mat-mdc-table {
+    min-width: 500px;
+  }
 }

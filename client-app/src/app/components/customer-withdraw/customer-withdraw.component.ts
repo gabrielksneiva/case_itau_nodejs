@@ -35,27 +35,26 @@ export class CustomerWithdrawComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const idStr = this.route.snapshot.paramMap.get('id');
-    if (idStr) {
-      const customerId = Number(idStr);
-      this.customerService.getById(customerId).subscribe({
-        next: data => this.customer = data,
-        error: () => this.router.navigate(['/clientes'])
-      });
-    } else {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (!id) {
       this.router.navigate(['/clientes']);
+      return;
     }
+
+    this.customerService.getById(id).subscribe({
+      next: data => this.customer = data,
+      error: () => this.router.navigate(['/clientes'])
+    });
   }
 
-  handleTransaction(formData: { valor: number }): void {
+  handleTransaction(formData: { amount: number }) {
     if (!this.customer) return;
-
     this.isLoading = true;
-    const valor = formData.valor;
+    this.errorMessage = undefined;
 
-    this.customerService.withdraw(this.customer.id, valor).subscribe({
+    this.customerService.withdraw(this.customer.id, formData.amount).subscribe({
       next: () => {
-        this.snackBar.open('Saque realizado com sucesso ', 'Fechar', {
+        this.snackBar.open('Saque realizado com sucesso', 'Fechar', {
           duration: 4000,
           horizontalPosition: 'center',
           verticalPosition: 'top',
@@ -64,20 +63,13 @@ export class CustomerWithdrawComponent implements OnInit {
         this.router.navigate(['/clientes']);
       },
       error: (err) => {
-        const msg = err.error?.message || err.error?.erro || 'Erro inesperado';
-        this.snackBar.open(msg, 'Fechar', {
-          duration: 5000,
-          horizontalPosition: 'center',
-          verticalPosition: 'top',
-          panelClass: ['snackbar-error']
-        });
+        this.errorMessage = err.error?.message || 'Erro inesperado';
         this.isLoading = false;
       }
     });
   }
 
-  goBack(): void {
+  goBack() {
     this.router.navigate(['/clientes']);
   }
 }
-

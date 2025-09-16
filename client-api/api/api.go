@@ -23,16 +23,21 @@ func Start() {
 	if err != nil {
 		l.Logger.Sugar().Fatalf("failed to connect database: %v", err)
 	}
-	err = db.AutoMigrate(&repositories.Clientes{})
+	err = db.AutoMigrate(&repositories.Customers{})
+	if err != nil {
+		l.Logger.Sugar().Fatalf("failed to migrate database: %v", err)
+	}
+	err = db.AutoMigrate(&repositories.Transaction{})
 	if err != nil {
 		l.Logger.Sugar().Fatalf("failed to migrate database: %v", err)
 	}
 
 	// init repo
-	repo := repositories.NewGormRepository[repositories.Clientes](db)
+	repoCli := repositories.NewGormRepository[repositories.Customers](db)
+	repoTrans := repositories.NewGormRepository[repositories.Transaction](db)
 
 	// init services and handlers
-	svc := customer.NewService(repo)
+	svc := customer.NewService(repoCli, repoTrans)
 	h := handler.NewCustomerHandler(svc)
 
 	Register(app, db, cfg, h)

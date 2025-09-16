@@ -4,6 +4,8 @@ import { CustomerFormComponent } from './components/customer-form/customer-form.
 import { CustomerDeleteComponent } from './components/customer-delete/customer-delete.component';
 import { CustomerDepositComponent } from './components/customer-deposit/customer-deposit.component';
 import { CustomerWithdrawComponent } from './components/customer-withdraw/customer-withdraw.component';
+import { CustomerTransactionListComponent } from './components/customer-transactions/transaction-list.component';
+
 
 export const routes: Routes = [
   { path: '', redirectTo: 'clientes', pathMatch: 'full' },
@@ -12,5 +14,6 @@ export const routes: Routes = [
   { path: 'clientes/:id/edit', component: CustomerFormComponent },
   { path: 'clientes/:id/delete', component: CustomerDeleteComponent },
   { path: 'clientes/:id/deposit', component: CustomerDepositComponent },
-  { path: 'clientes/:id/withdraw', component: CustomerWithdrawComponent }
+  { path: 'clientes/:id/withdraw', component: CustomerWithdrawComponent },
+  { path: 'clientes/:id/transacoes', component: CustomerTransactionListComponent }
 ];

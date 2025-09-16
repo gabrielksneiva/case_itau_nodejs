@@ -1,8 +1,7 @@
-<!-- A mesma estrutura, apenas passando uma configuração diferente. -->
-<app-transaction-form 
+<app-transaction-form
   *ngIf="customer"
   [config]="withdrawConfig"
-  [clientName]="customer.nome"
+  [clientName]="customer.name"
   [loading]="isLoading"
   [error]="errorMessage"
   (formSubmit)="handleTransaction($event)"

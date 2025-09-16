@@ -3,41 +3,41 @@ definitions:
     properties:
       email:
         type: string
-      nome:
+      name:
         minLength: 2
         type: string
     required:
     - email
-    - nome
+    - name
     type: object
   types.CustomerDto:
     properties:
+      balance:
+        type: number
       email:
         type: string
       id:
-        type: integer
-      nome:
         type: string
-      saldo:
-        type: number
+      name:
+        type: string
     type: object
   types.TransactionRequest:
     properties:
-      valor:
+      amount:
         type: number
     required:
-    - valor
+    - amount
     type: object
   types.UpdateCustomerRequest:
     properties:
       email:
         type: string
-      nome:
+      name:
         minLength: 2
         type: string
     required:
     - email
-    - nome
+    - name
     type: object
 info:
   contact: {}
@@ -112,7 +112,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -140,7 +140,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -170,7 +170,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: Dados do usuário
         in: body
         name: customer
@@ -207,7 +207,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: Dados do depósito
         in: body
         name: deposit
@@ -244,7 +244,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: Dados do saque
         in: body
         name: withdraw
@@ -269,6 +269,52 @@ paths:
             additionalProperties: true
             type: object
       summary: Saca um valor da conta do usuário
+      tags:
+      - Transações
+  /clientes/{id}/transacoes:
+    get:
+      consumes:
+      - application/json
+      description: Endpoint para listar o histórico de transações de um cliente, com
+        suporte a paginação via query params `page` e `size`.
+      parameters:
+      - description: ID do usuário (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 'Número da página (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Itens por página (default: 10)'
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Retorna metadados de paginação e a lista de transações
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Lista todas as transações de um usuário
       tags:
       - Transações
 swagger: "2.0"

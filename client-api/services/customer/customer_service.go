@@ -3,34 +3,35 @@ package customer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"case-itau/repositories"
 
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
 var (
 	ErrNotFound          = errors.New("cliente não encontrado")
 	ErrInsufficientFunds = errors.New("saldo insuficiente")
-	ErrUniqueEmail       = errors.New("UNIQUE constraint failed: clientes.email")
+	ErrUniqueEmail       = errors.New("UNIQUE constraint failed: customers.email")
 )
 
 type Service struct {
-	repo repositories.IRepository[repositories.Clientes]
+	repoCli   repositories.IRepository[repositories.Customers]
+	repoTrans repositories.IRepository[repositories.Transaction]
 }
 
-func NewService(repo repositories.IRepository[repositories.Clientes]) *Service {
-	return &Service{repo: repo}
+func NewService(repoCli repositories.IRepository[repositories.Customers], repoTrans repositories.IRepository[repositories.Transaction]) *Service {
+	return &Service{repoCli: repoCli, repoTrans: repoTrans}
 }
 
-func (s *Service) ListAll(ctx context.Context) ([]repositories.Clientes, error) {
-	return s.repo.Find(ctx, nil, "", 0, 0)
+func (s *Service) ListAll(ctx context.Context) ([]repositories.Customers, error) {
+	return s.repoCli.Find(ctx, nil, "", 0, 0)
 }
 
-func (s *Service) GetByID(ctx context.Context, id int) (*repositories.Clientes, error) {
-	c, err := s.repo.FindOne(ctx, fmt.Sprintf("id = %d", id))
+func (s *Service) GetByID(ctx context.Context, id string) (*repositories.Customers, error) {
+	c, err := s.repoCli.FindOne(ctx, map[string]any{"id": id})
 	if err != nil {
 		if errors.Is(err, repositories.ErrRepoNotFound) {
 			return nil, ErrNotFound
@@ -40,29 +41,29 @@ func (s *Service) GetByID(ctx context.Context, id int) (*repositories.Clientes, 
 	return c, nil
 }
 
-func (s *Service) Create(ctx context.Context, input repositories.Clientes) (repositories.Clientes, error) {
-	input.Saldo = decimal.Zero
+func (s *Service) Create(ctx context.Context, input repositories.Customers) (repositories.Customers, error) {
+	input.Balance = decimal.Zero
 
-	if err := s.repo.InsertOne(ctx, &input); err != nil {
+	if err := s.repoCli.InsertOne(ctx, &input); err != nil {
 		if strings.Contains(err.Error(), ErrUniqueEmail.Error()) {
-			return repositories.Clientes{}, ErrUniqueEmail
+			return repositories.Customers{}, ErrUniqueEmail
 		}
-		return repositories.Clientes{}, err
+		return repositories.Customers{}, err
 	}
 	return input, nil
 }
 
-func (s *Service) Update(ctx context.Context, id int, input repositories.Clientes) (*repositories.Clientes, error) {
+func (s *Service) Update(ctx context.Context, id string, input repositories.Customers) (*repositories.Customers, error) {
 	update := make(map[string]any)
-	if input.Nome != "" {
-		update["nome"] = input.Nome
+	if input.Name != "" {
+		update["name"] = input.Name
 	}
 
 	if input.Email != "" {
 		update["email"] = input.Email
 	}
 
-	if err := s.repo.UpdateOne(ctx, fmt.Sprintf("id = %d", id), update); err != nil {
+	if err := s.repoCli.UpdateOne(ctx, map[string]any{"id": id}, update); err != nil {
 		if errors.Is(err, repositories.ErrRepoNotFound) {
 			return nil, err
 		}
@@ -72,15 +73,15 @@ func (s *Service) Update(ctx context.Context, id int, input repositories.Cliente
 		return nil, err
 	}
 
-	updated, err := s.repo.FindOne(ctx, fmt.Sprintf("id = %d", id))
+	updated, err := s.repoCli.FindOne(ctx, map[string]any{"id": id})
 	if err != nil {
 		return nil, err
 	}
 	return updated, nil
 }
 
-func (s *Service) Delete(ctx context.Context, id int) error {
-	if err := s.repo.DeleteOne(ctx, id); err != nil {
+func (s *Service) Delete(ctx context.Context, id string) error {
+	if err := s.repoCli.DeleteOne(ctx, map[string]any{"id": id}); err != nil {
 		if errors.Is(err, repositories.ErrRepoNotFound) {
 			return ErrNotFound
 		}
@@ -89,8 +90,8 @@ func (s *Service) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *Service) Transactions(ctx context.Context, id int, delta decimal.Decimal) (*repositories.Clientes, error) {
-	c, err := s.repo.FindOne(ctx, fmt.Sprintf("id = %d", id))
+func (s *Service) Transactions(ctx context.Context, id string, delta decimal.Decimal) (*repositories.Customers, error) {
+	c, err := s.repoCli.FindOne(ctx, map[string]any{"id": id})
 	if err != nil {
 		if errors.Is(err, repositories.ErrRepoNotFound) {
 			return nil, ErrNotFound
@@ -98,24 +99,69 @@ func (s *Service) Transactions(ctx context.Context, id int, delta decimal.Decima
 		return nil, err
 	}
 
-	newSaldo := c.Saldo.Add(delta)
-	if newSaldo.IsNegative() {
+	newBalance := c.Balance.Add(delta)
+	if newBalance.IsNegative() {
 		return nil, ErrInsufficientFunds
 	}
 
 	updates := map[string]any{
-		"saldo": newSaldo,
+		"balance": newBalance,
 	}
 
-	err = s.repo.UpdateOne(ctx, fmt.Sprintf("id = %d", c.ID), updates)
+	err = s.repoCli.UpdateOne(ctx, map[string]any{"id": c.ID.String()}, updates)
 	if err != nil {
 		return nil, err
 	}
 
-	updated, err := s.repo.FindOne(ctx, fmt.Sprintf("id = %d", c.ID))
+	updated, err := s.repoCli.FindOne(ctx, map[string]any{"id": c.ID.String()})
 	if err != nil {
+		return nil, err
+	}
+
+	transactionType := "withdraw"
+	if delta.IsPositive() {
+		transactionType = "deposit"
+	}
+
+	t := &repositories.Transaction{
+		TransactionID: uuid.New(),
+		CustomerID:    c.ID,
+		Amount:        delta,
+		Type:          transactionType,
+	}
+
+	if err := s.repoTrans.InsertOne(ctx, t); err != nil {
 		return nil, err
 	}
 
 	return updated, nil
+}
+
+func (s *Service) ListTransactions(ctx context.Context, customerID string, page, size int) ([]repositories.Transaction, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if size <= 0 {
+		size = 10
+	}
+
+	offset := (page - 1) * size
+
+	total, err := s.repoTrans.Count(ctx, map[string]any{"customer_id": customerID})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	txs, err := s.repoTrans.Find(
+		ctx,
+		map[string]any{"customer_id": customerID},
+		"created_at DESC",
+		size,
+		offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return txs, total, nil
 }
