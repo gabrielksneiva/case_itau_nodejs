@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e" scale="1" border="0">
-    <diagram name="Page-1" id="4ExR80CZJzOhRtTa2P1v">
-        <mxGraphModel dx="1809" dy="588" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <diagram name="Arch" id="4ExR80CZJzOhRtTa2P1v">
+        <mxGraphModel dx="1537" dy="500" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -28,7 +28,7 @@
                 <mxCell id="-zNNK06SsHa1XQgnB9l8-8" value="SQS" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
                     <mxGeometry x="1160" y="250" width="86" height="54" as="geometry"/>
                 </mxCell>
-                <mxCell id="2" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="-zNNK06SsHa1XQgnB9l8-9" target="-zNNK06SsHa1XQgnB9l8-7">
+                <mxCell id="2" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="-zNNK06SsHa1XQgnB9l8-9" target="-zNNK06SsHa1XQgnB9l8-7" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="-zNNK06SsHa1XQgnB9l8-9" value="Worker Fleet Fargate - async tasks" style="whiteSpace=wrap;strokeWidth=2;" parent="1" vertex="1">
